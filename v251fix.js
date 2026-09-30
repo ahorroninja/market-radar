@@ -8,7 +8,6 @@ market = async function(a){
       return {history: await yahoo(a), source:'Yahoo'};
     } catch(e) {
       console.warn('Yahoo', a[0], e);
-      // An up-to-date market often has no newer daily candle yet. Existing history is still valid.
       if(cached.length >= 220) return {history: cached, source:'Local (Yahoo sin vela nueva)'};
       if(state.eodKey){
         try { return {history: await eod(a), source:'EODHD'}; }
@@ -20,13 +19,11 @@ market = async function(a){
   return marketV251(a);
 };
 
-const refreshV251Base = refresh;
 refresh = async function(){
   if(!state.workerUrl&&!state.eodKey) return alert('Configura el Worker o EODHD en Ajustes.');
   const b=$('#refresh'); if(b){b.disabled=true;b.textContent='Actualizando…'}
   const errors=[];
   try{
-    // Load historical macro when V2.5 is active. Failure must not break market-price refresh.
     if(typeof fredHistory==='function' && state.fredKey){
       try{
         const ids=['VIXCLS','BAMLH0A0HYM2','T10Y2Y','NFCI'];
@@ -56,7 +53,22 @@ refresh = async function(){
   }
 };
 
-// Make the deployed build unmistakable even on dashboard.
 const dashboardV251Base = dashboard;
-dashboard = function(){ return dashboardV251Base().replace('V2.4','V2.5.1'); };
+dashboard = function(){ return dashboardV251Base().replace('V2.4','V2.5.1').replace('V2.5','V2.5.1'); };
+
+// Force the V2.5 backtest UI. The base V2.4 renderer kept calling its original
+// backtest binding on some browsers, so do not rely on function rebinding here.
+const renderV251Base = render;
+render = function(){
+  renderV251Base();
+  if(state.view==='backtest' && typeof portfolioBacktestV25==='function'){
+    const html = backtest().replace('V2.5</span>','V2.5.1</span>');
+    $('#app').innerHTML = html;
+    if($('#btUniverse')) $('#btUniverse').onchange=e=>{state.btUniverse=e.target.value;save();render()};
+    if($('#btYears')) $('#btYears').onchange=e=>{state.btYears=e.target.value;save();render()};
+    if($('#btRollYears')) $('#btRollYears').onchange=e=>{state.btRollYears=e.target.value;save();render()};
+  }
+  const tag=document.querySelector('.vtag');
+  if(tag) tag.textContent='V2.5.1';
+};
 render();
