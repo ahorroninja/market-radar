@@ -1,0 +1,16 @@
+name: Backtest validation
+on:
+  push:
+    branches: [backtest-v26-validation]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run deterministic validation
+        run: node validation/backtest-validation.js
