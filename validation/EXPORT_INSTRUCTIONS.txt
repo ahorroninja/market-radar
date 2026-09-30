@@ -1,0 +1,6 @@
+Real-data validation needs the PWA's existing mr_state history. Do not commit it.
+In Chrome DevTools console on the Market Radar page, run:
+copy(localStorage.getItem('mr_state'))
+Save the clipboard text locally as validation/mr-state.json, then run:
+node validation/real-data-runner.js validation/mr-state.json
+The .gitignore prevents accidental commit of that file.
