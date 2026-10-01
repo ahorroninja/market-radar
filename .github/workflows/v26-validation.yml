@@ -1,7 +1,7 @@
-name: V2.6 validation
+name: V2.6 release gate
 on:
   push:
-    branches: [v26-clean]
+    branches: [v26-rebuild]
   pull_request:
     branches: [main]
 jobs:
@@ -12,5 +12,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run V2.6 Smart DCA safety tests
+      - name: Syntax check V2.6 modules
+        run: |
+          node --check v26-smart-dca.js
+          node --check v26-ui.js
+          node --check v26-backtest.js
+          node --check validation/v26-release-gate.js
+      - name: Existing Smart DCA safety tests
         run: node validation/v26-smart-dca-tests.js
+      - name: Frozen-spec release gate
+        run: node validation/v26-release-gate.js
