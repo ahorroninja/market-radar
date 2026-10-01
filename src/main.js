@@ -1,13 +1,5 @@
-import { createShell } from './ui/shell.js';
-import { VIEW_RENDERERS } from './ui/views.js';
-import { freshSettings,APP_VERSION } from './domain/defaults.js';
-
-const SETTINGS_KEY='market-radar-v3-settings';
-function loadSettings(){try{const raw=localStorage.getItem(SETTINGS_KEY);return raw?{...freshSettings(),...JSON.parse(raw)}:freshSettings();}catch{return freshSettings();}}
-function loadCache(){try{return JSON.parse(localStorage.getItem('market-radar-v3-cache')||'{}');}catch{return {};}}
-
-const ctx={settings:loadSettings(),marketCache:loadCache(),asOf:new Date().toISOString().slice(0,10),version:APP_VERSION};
-const root=document.querySelector('#app');
-const shell=createShell(root,{initialRoute:location.hash.slice(1)||'radar',onRouteChange(route,outlet){location.hash=route;VIEW_RENDERERS[route](outlet,ctx);}});
-shell.setStatus(APP_VERSION);
-window.addEventListener('hashchange',()=>shell.navigate(location.hash.slice(1)));
+import { createShell } from './ui/shell.js';import { VIEW_RENDERERS } from './ui/views.js';import { APP_VERSION } from './domain/defaults.js';import { loadState,saveSettings,saveCache } from './app/persistence.js';import { refreshMarketData } from './app/refresh.js';
+const state=loadState();const ctx={...state,asOf:Object.values(state.marketCache).map(x=>x.asOf).filter(Boolean).sort().at(-1)||null,version:APP_VERSION};const root=document.querySelector('#app');let shell;
+function render(){VIEW_RENDERERS[shell.route](shell.outlet,ctx)}
+ctx.notify=t=>{shell.setStatus(t);setTimeout(()=>shell.setStatus(APP_VERSION),2500)};ctx.saveSettings=()=>saveSettings(ctx.settings);ctx.saveAll=()=>{saveSettings(ctx.settings);saveCache(ctx.marketCache)};ctx.refresh=async()=>{shell.setStatus('Actualizando…');const r=await refreshMarketData(ctx,{onProgress:(n,total)=>shell.setStatus(`Actualizando ${n}/${total}`)});saveCache(ctx.marketCache);ctx.notify(r.failures.length?`${r.updated} actualizados · ${r.failures.length} fallos`:`${r.updated} activos actualizados`);render()};
+shell=createShell(root,{initialRoute:location.hash.slice(1)||'radar',onRouteChange:(route,outlet)=>{location.hash=route;VIEW_RENDERERS[route](outlet,ctx)}});shell.setStatus(APP_VERSION);window.addEventListener('hashchange',()=>{if(location.hash.slice(1)!==shell.route)shell.navigate(location.hash.slice(1))});
