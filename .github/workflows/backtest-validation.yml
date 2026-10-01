@@ -12,5 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run deterministic validation
+      - name: Run deterministic backtest validation
         run: node validation/backtest-validation.js
+      - name: Run V2.6 Smart DCA stress tests
+        run: node validation/v26-smart-dca-tests.js
