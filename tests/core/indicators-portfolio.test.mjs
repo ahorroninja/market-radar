@@ -4,11 +4,12 @@ import { drawdown, simpleReturn, sma, trendSignal, opportunityBand } from '../..
 import { buildPortfolioSnapshot, targetGaps } from '../../src/core/portfolio.js';
 
 const points=closes=>closes.map((close,i)=>({date:`2026-01-${String(i+1).padStart(2,'0')}`,close}));
+const approx=(actual,expected,tol=1e-12)=>assert.ok(Math.abs(actual-expected)<=tol,`${actual} != ${expected} within ${tol}`);
 
 test('drawdown is zero at a new high',()=>assert.equal(drawdown(points([100,110,120])),0));
 test('drawdown measures fall from prior peak',()=>assert.equal(drawdown(points([100,120,90])),-.25));
 test('drawdown missing history returns null, not zero',()=>assert.equal(drawdown([]),null));
-test('simple return is deterministic',()=>assert.equal(simpleReturn(points([100,105,110]),2),.1));
+test('simple return is deterministic',()=>approx(simpleReturn(points([100,105,110]),2),.1));
 test('simple return with insufficient history is null',()=>assert.equal(simpleReturn(points([100]),2),null));
 test('SMA uses exactly requested trailing observations',()=>assert.equal(sma(points([1,2,3,4,5]),3),4));
 test('trend signal compares last close with SMA and is bounded',()=>{
