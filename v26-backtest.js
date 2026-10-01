@@ -3,9 +3,9 @@
 'use strict';
 const K=a=>key(a);
 function monthly(){const n=Number(state.monthly);return Number.isFinite(n)&&n>=0?n:1000;}
-function snapshotBefore(hist,u,shares,maps,executionDate){
+function snapshotBefore(hist,u,shares){
  const assets=u.map(a=>({key:K(a),target:a[3]})),portfolio={},data={};
- for(const a of u){const k=K(a),prior=hist[k];const last=prior.at(-1);if(!last)continue;portfolio[k]=shares[k]*maps.get(k).get(executionDate);const t=calc(prior);if(t&&Number.isFinite(t.dd))data[k]={dd:t.dd};}
+ for(const a of u){const k=K(a),prior=hist[k],last=prior.at(-1);if(!last)continue;portfolio[k]=shares[k]*last.c;const t=calc(prior);if(t&&Number.isFinite(t.dd))data[k]={dd:t.dd};}
  return {assets,portfolio,data};
 }
 function simulateV26(u,maps,dates){
@@ -13,21 +13,15 @@ function simulateV26(u,maps,dates){
  const names=['DCA objetivo','Rebalanceo','Smart DCA V2.6'];
  const shares=Object.fromEntries(names.map(n=>[n,Object.fromEntries(u.map(a=>[K(a),0]))]));
  const cash=Object.fromEntries(names.map(n=>[n,0])),series=Object.fromEntries(names.map(n=>[n,[]])),flows=Object.fromEntries(names.map(n=>[n,[]]));
- const hist=Object.fromEntries(u.map(a=>[K(a),[]]));let lastMonth='',contrib=0;
- const targetSum=u.reduce((s,a)=>s+a[3],0);
- for(const d of dates){
-  const month=d.slice(0,7),isBuy=month!==lastMonth;
+ const hist=Object.fromEntries(u.map(a=>[K(a),[]]));let lastMonth='',contrib=0;const targetSum=u.reduce((s,a)=>s+a[3],0);
+ for(const d of dates){const month=d.slice(0,7),isBuy=month!==lastMonth;
   if(isBuy){lastMonth=month;const flow=monthly();contrib+=flow;for(const n of names){cash[n]+=flow;flows[n].push({d,v:-flow});}
    for(const a of u){const k=K(a),amt=flow*a[3]/targetSum;shares['DCA objetivo'][k]+=amt/maps.get(k).get(d);cash['DCA objetivo']-=amt;}
    const vals=Object.fromEntries(u.map(a=>[K(a),shares['Rebalanceo'][K(a)]*maps.get(K(a)).get(d)]));const total=Object.values(vals).reduce((x,y)=>x+y,0)+cash['Rebalanceo'];const gaps=u.map(a=>Math.max(0,total*a[3]/targetSum-vals[K(a)])),gs=gaps.reduce((x,y)=>x+y,0);
    for(let i=0;i<u.length;i++){const a=u[i],amt=gs?flow*gaps[i]/gs:flow*a[3]/targetSum;shares['Rebalanceo'][K(a)]+=amt/maps.get(K(a)).get(d);cash['Rebalanceo']-=amt;}
-   const snap=snapshotBefore(hist,u,shares['Smart DCA V2.6'],maps,d);let alloc;
-   if(Object.keys(snap.data).length===0){alloc=Object.fromEntries(u.map(a=>[K(a),flow*a[3]/targetSum]));}
-   else alloc=MR26.smartDcaAllocation({...snap,monthly:flow,maxAssetShare:.40,drawdownStrength:1,underweightStrength:.35}).allocations;
-   const invested=Object.values(alloc).reduce((x,y)=>x+y,0);if(Math.abs(invested-flow)>.011)throw Error(`V2.6 contribution invariant ${d}: ${invested} != ${flow}`);
-   for(const a of u){const k=K(a),amt=alloc[k]||0;shares['Smart DCA V2.6'][k]+=amt/maps.get(k).get(d);cash['Smart DCA V2.6']-=amt;}
+   const snap=snapshotBefore(hist,u,shares['Smart DCA V2.6']);let alloc;if(Object.keys(snap.data).length===0)alloc=Object.fromEntries(u.map(a=>[K(a),flow*a[3]/targetSum]));else alloc=MR26.smartDcaAllocation({...snap,monthly:flow,maxAssetShare:.40,drawdownStrength:1,underweightStrength:.35}).allocations;
+   const invested=Object.values(alloc).reduce((x,y)=>x+y,0);if(Math.abs(invested-flow)>.011)throw Error(`V2.6 contribution invariant ${d}: ${invested} != ${flow}`);for(const a of u){const k=K(a),amt=alloc[k]||0;shares['Smart DCA V2.6'][k]+=amt/maps.get(k).get(d);cash['Smart DCA V2.6']-=amt;}
   }
-  // Critical timing rule: today's close becomes signal history only AFTER today's execution.
   for(const a of u)hist[K(a)].push({d,c:maps.get(K(a)).get(d)});
   for(const n of names){const v=cash[n]+u.reduce((s,a)=>s+shares[n][K(a)]*maps.get(K(a)).get(d),0);series[n].push({d,v,flow:isBuy?monthly():0});}
  }
