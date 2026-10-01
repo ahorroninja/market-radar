@@ -27,3 +27,5 @@ jobs:
         run: node validation/v26-lookahead-tests.js
       - name: Run contribution and purchase timing invariants
         run: node validation/v26-timing-tests.js
+      - name: Run deterministic end-to-end backtest audit
+        run: node validation/v26-e2e-model-tests.js
