@@ -25,3 +25,5 @@ jobs:
         run: node validation/v26-metric-tests.js
       - name: Run no-lookahead decision-time invariants
         run: node validation/v26-lookahead-tests.js
+      - name: Run contribution and purchase timing invariants
+        run: node validation/v26-timing-tests.js
