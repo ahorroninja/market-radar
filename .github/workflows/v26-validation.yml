@@ -1,7 +1,7 @@
 name: V2.6 validation
 on:
   push:
-    branches: [v26-clean]
+    branches: [v26-clean, v26-backtest-audit]
   pull_request:
     branches: [main]
 jobs:
@@ -12,5 +12,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Syntax check production and audit modules
+        run: |
+          node --check v26-smart-dca.js
+          node --check v26-ui.js
+          node --check v26-backtest.js
       - name: Run V2.6 Smart DCA safety tests
         run: node validation/v26-smart-dca-tests.js
+      - name: Run V2.6 adversarial audit tests
+        run: node validation/v26-audit-tests.js
