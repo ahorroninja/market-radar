@@ -1,16 +1,31 @@
 name: Market Radar V3 CI
 on:
   push:
-    branches: [market-radar-v3-clean]
+    branches: [market-radar-v3-clean, main]
   pull_request:
     branches: [main]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - name: Run V3 tests
+          node-version: 22
+      - name: Test complete V3 release candidate
         run: npm test
+      - name: Production entrypoint sanity
+        run: |
+          test -f index.html
+          test -f manifest.webmanifest
+          test -f sw.js
+          test -f src/main.js
+          test -f public/styles.css
+          ! test -f app.js
+          ! test -f v25.js
+          ! test -f v251fix.js
+          ! test -f v26-ui.js
+          ! test -f v26-smart-dca.js
