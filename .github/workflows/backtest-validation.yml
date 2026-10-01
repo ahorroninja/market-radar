@@ -1,0 +1,18 @@
+name: Backtest validation
+on:
+  push:
+    branches: [backtest-v26-validation]
+  pull_request:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run deterministic backtest validation
+        run: node validation/backtest-validation.js
+      - name: Run V2.6 Smart DCA stress tests
+        run: node validation/v26-smart-dca-tests.js

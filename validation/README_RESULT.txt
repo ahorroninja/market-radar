@@ -1,0 +1,1 @@
+Deterministic engine implementation is complete. The only remaining validation input is the user's actual locally cached mr_state history, which is intentionally not stored in GitHub because it may contain API credentials.
