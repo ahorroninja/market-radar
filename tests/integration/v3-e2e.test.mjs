@@ -1,3 +1,20 @@
-import test from 'node:test';import assert from 'node:assert/strict';import { drawdown } from '../../src/core/indicators.js';import { buildPortfolioSnapshot } from '../../src/core/portfolio.js';import { allocateSmartDca } from '../../src/core/smart-dca.js';import { runBacktest } from '../../src/core/backtest.js';
-const assets=[{id:'a',name:'A',enabled:true,targetWeight:.6},{id:'b',name:'B',enabled:true,targetWeight:.4}],hist={a:[{date:'2026-01-30',close:100},{date:'2026-02-02',close:90},{date:'2026-03-02',close:95}],b:[{date:'2026-01-30',close:100},{date:'2026-02-02',close:100},{date:'2026-03-02',close:100}]},policy={drawdownStrength:1,underweightStrength:.35,maxContributionShare:.4};
-test('data -> radar drawdown -> Comprar Smart DCA -> backtest stays coherent',()=>{assert.equal(drawdown(hist.a),-.05);const indicators=assets.map(a=>({assetId:a.id,drawdown:drawdown(hist[a.id]),missing:[]}));const buy=allocateSmartDca({contribution:1000,assets,portfolio:buildPortfolioSnapshot('2026-03-02',[{assetId:'a',value:6000},{assetId:'b',value:4000}]),indicators,policy});assert.equal(Object.values(buy.allocations).reduce((a,b)=>a+b,0),1000);const bt=runBacktest({assets,histories:hist,initialHoldings:{a:0,b:0},monthlyContribution:1000,startDate:'2026-02-01',endDate:'2026-03-31',strategy:'smartDca',smartDcaPolicy:policy});assert.equal(bt.totalContributed,2000);assert.equal(bt.ledger.length,2)});
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { drawdown } from '../../src/core/indicators.js';
+import { buildPortfolioSnapshot } from '../../src/core/portfolio.js';
+import { allocateSmartDca } from '../../src/core/smart-dca.js';
+import { runBacktest } from '../../src/core/backtest.js';
+
+const assets=[{id:'a',name:'A',enabled:true,targetWeight:.6},{id:'b',name:'B',enabled:true,targetWeight:.4}];
+const hist={a:[{date:'2026-01-30',close:100},{date:'2026-02-02',close:90},{date:'2026-03-02',close:95}],b:[{date:'2026-01-30',close:100},{date:'2026-02-02',close:100},{date:'2026-03-02',close:100}]};
+const policy={drawdownStrength:1,underweightStrength:.35,maxContributionShare:.4};
+
+test('data -> radar drawdown -> Comprar Smart DCA -> backtest stays coherent',()=>{
+ assert.ok(Math.abs(drawdown(hist.a)-(-.05))<1e-12);
+ const indicators=assets.map(a=>({assetId:a.id,drawdown:drawdown(hist[a.id]),missing:[]}));
+ const buy=allocateSmartDca({contribution:1000,assets,portfolio:buildPortfolioSnapshot('2026-03-02',[{assetId:'a',value:6000},{assetId:'b',value:4000}]),indicators,policy});
+ assert.equal(Object.values(buy.allocations).reduce((a,b)=>a+b,0),1000);
+ const bt=runBacktest({assets,histories:hist,initialHoldings:{a:0,b:0},monthlyContribution:1000,startDate:'2026-02-01',endDate:'2026-03-31',strategy:'smartDca',smartDcaPolicy:policy});
+ assert.equal(bt.totalContributed,2000);
+ assert.equal(bt.ledger.length,2);
+});
