@@ -29,43 +29,39 @@ storage adapters ──> application services
 
 src/
   domain/
-    types.js             Canonical shapes, validation helpers, error codes
-    defaults.js          Default assets and non-secret defaults
+    types.js
+    defaults.js
   core/
-    indicators.js        Drawdown/trend/etc. pure calculations
-    radar.js             Radar component scores + aggregate score
-    portfolio.js         Weights, target gaps, eligibility
-    smart-dca.js         The one production Smart DCA allocator
-    metrics.js           TWR, XIRR, DD, vol, Sharpe
-    backtest.js          Historical clock/execution; calls smart-dca.js
+    indicators.js
+    radar.js
+    portfolio.js
+    smart-dca.js
+    metrics.js
+    backtest.js
   data/
-    normalize.js         Provider payload -> canonical PricePoint series
-    repository.js        Canonical market-data access API
+    normalize.js
+    repository.js
     providers/
-      provider-a.js
-      provider-b.js
   storage/
     settings-store.js
     market-cache.js
     backup.js
   app/
-    state.js             Small application state/store
-    refresh.js           Daily refresh orchestration
+    state.js
+    refresh.js
     bootstrap.js
   ui/
-    shell.js             Persistent navigation and route switching
+    shell.js
     radar-view.js
     buy-view.js
     backtest-view.js
     settings-view.js
   main.js
-
 public/
   index.html
   styles.css
   manifest.webmanifest
   sw.js
-
 tests/
   core/
   data/
@@ -77,88 +73,52 @@ tests/
 
 ### Asset
 ```js
-{
-  id: string,                  // immutable internal id
-  name: string,
-  enabled: boolean,
-  targetWeight: number,        // decimal [0,1]
-  symbols: { [providerId]: string | null }
-}
+{ id: string, name: string, enabled: boolean, targetWeight: number, symbols: { [providerId]: string | null } }
 ```
-No current price, score or transient provider payload is stored inside Asset.
+Asset contains configuration, not transient price/score/provider payloads.
 
 ### Holding
 ```js
-{
-  assetId: string,
-  value: number               // EUR current market value for live allocation
-}
+{ assetId: string, value: number }
 ```
-V3 initially uses value rather than share accounting in live Comprar because allocation needs current portfolio weights, not tax-lot accounting.
+Live Comprar needs current EUR position value, not tax-lot accounting.
 
 ### PricePoint
 ```js
-{
-  date: 'YYYY-MM-DD',
-  close: number
-}
+{ date: 'YYYY-MM-DD', close: number }
 ```
-Normalized, ascending, unique trading dates, finite close > 0.
+Ascending, unique trading dates, finite close > 0.
 
 ### MarketSeries
 ```js
-{
-  assetId: string,
-  points: PricePoint[],
-  asOf: 'YYYY-MM-DD',
-  source: string
-}
+{ assetId: string, points: PricePoint[], asOf: 'YYYY-MM-DD', source: string }
 ```
 
 ### IndicatorSnapshot
 ```js
 {
-  assetId: string,
-  asOf: 'YYYY-MM-DD',
-  drawdown: number | null,
-  trend: number | null,
-  valuation: number | null,
-  sentiment: number | null,
-  macro: number | null,
-  breadth: number | null,
+  assetId: string, asOf: 'YYYY-MM-DD',
+  drawdown: number | null, trend: number | null,
+  valuation: number | null, sentiment: number | null,
+  macro: number | null, breadth: number | null,
   missing: string[]
 }
 ```
-Null means unavailable. Zero is a valid value and is never treated as missing.
+Null means unavailable. Zero is valid and is never treated as missing.
 
 ### PortfolioSnapshot
 ```js
-{
-  asOf: 'YYYY-MM-DD',
-  holdings: Holding[],
-  totalValue: number,
-  weights: { [assetId]: number }
-}
+{ asOf: 'YYYY-MM-DD', holdings: Holding[], totalValue: number, weights: { [assetId]: number } }
 ```
 
 ### SmartDcaRequest
 ```js
-{
-  contribution: number,
-  assets: Asset[],
-  portfolio: PortfolioSnapshot,
-  indicators: IndicatorSnapshot[],
-  policy: SmartDcaPolicy
-}
+{ contribution: number, assets: Asset[], portfolio: PortfolioSnapshot, indicators: IndicatorSnapshot[], policy: SmartDcaPolicy }
 ```
 
 ### SmartDcaPolicy
 ```js
-{
-  drawdownStrength: number,
-  underweightStrength: number,
-  maxContributionShare: number
-}
+{ drawdownStrength: number, underweightStrength: number, maxContributionShare: number }
 ```
 Policy is explicit input so live and backtest cannot accidentally use different constants.
 
@@ -177,29 +137,20 @@ Policy is explicit input so live and backtest cannot accidentally use different 
   }
 }
 ```
-Allocations are EUR cents and sum exactly to contribution. Diagnostics make decisions auditable without duplicating formulas in UI.
+Allocations are whole euros and sum exactly to the whole-euro contribution. Diagnostics make decisions auditable without duplicating formulas in UI.
 
 ### RadarResult
 ```js
-{
-  asOf: 'YYYY-MM-DD',
-  assets: [{ assetId, score, components, opportunityBand, missing }],
-  portfolioScore: number | null
-}
+{ asOf: 'YYYY-MM-DD', assets: [{ assetId, score, components, opportunityBand, missing }], portfolioScore: number | null }
 ```
 
 ### BacktestRequest
 ```js
 {
-  assets: Asset[],
-  histories: { [assetId]: PricePoint[] },
-  initialHoldings: object,
-  monthlyContribution: number,
-  startDate: string,
-  endDate: string,
+  assets: Asset[], histories: { [assetId]: PricePoint[] }, initialHoldings: object,
+  monthlyContribution: number, startDate: string, endDate: string,
   strategy: 'targetDca' | 'contributionRebalance' | 'smartDca',
-  smartDcaPolicy: SmartDcaPolicy,
-  warmupTradingDays: number
+  smartDcaPolicy: SmartDcaPolicy, warmupTradingDays: number
 }
 ```
 
@@ -209,73 +160,58 @@ Contains execution ledger, external cash-flow ledger, valuation series, terminal
 ## Smart DCA feasibility contract
 Configured `maxContributionShare` is a desired cap. Let N be the number of eligible assets. Conservation requires an effective cap >= 1/N.
 
-Therefore:
 `effectiveMaxShare = max(configuredMaxContributionShare, 1 / N)`
 
-If the cap is relaxed, `diagnostics.warnings` records it. This is deterministic and mathematically feasible. No money disappears and no hidden cash balance is created.
-
-If N = 0 and contribution > 0, allocation returns a typed `NO_ELIGIBLE_ASSETS` error. It does not invent signals or silently allocate by target.
+If relaxed, diagnostics records it. If N = 0 and contribution > 0, return typed `NO_ELIGIBLE_ASSETS`; never invent signals.
 
 ## Money and rounding contract
-- User-facing contribution and allocation values are represented internally in integer euro cents during allocation.
-- Financial return calculations use Number decimals, not cents.
-- Smart DCA computes raw weights, allocates floor cents, then distributes remaining cents deterministically by largest fractional remainder, tie-broken by stable asset id.
-- Exact invariant: sum(allocationCents) === contributionCents.
+- Monthly contribution in Comprar is a non-negative whole number of euros.
+- Smart DCA performs weighting calculations with normal decimal Numbers.
+- Final recommendations are rounded to whole euros.
+- Rounding uses largest remainder: floor each raw allocation, then assign remaining euros to the largest fractional remainders; stable asset id breaks ties.
+- Exact invariant: `sum(allocations) === contribution` in whole euros.
+- No cent-level accounting is required in V3.
+- Backtest valuation and return calculations remain decimal Numbers because market values and returns naturally contain fractions.
 
 ## Historical-time contract
 For execution date t:
 - `signalCutoff < t`.
 - indicators and portfolio decision state use only information with date <= signalCutoff.
 - execution uses normalized price at t.
-- t is appended to the strategy-visible history after execution.
-- missing execution price means that asset cannot execute on t; the engine uses a documented common execution-date policy rather than forward-filling silently.
+- t enters strategy-visible history only after execution.
+- missing execution prices follow an explicit common-date policy; no silent forward fill.
 
-Backtest must expose decision date, signal cutoff and execution price in its ledger so timing can be audited.
+Backtest exposes decision date, signal cutoff and execution prices in its ledger.
 
 ## Contribution schedule contract
-A monthly contribution executes once per calendar month on the first common valid execution date on/after the configured monthly schedule point. Initial V3 default: first common trading observation of each month. There is never more than one external monthly contribution for a month.
+One contribution per calendar month, initially on the first common valid trading observation of the month. Never more than one external monthly contribution in a month.
 
 ## Performance-metric contract
 Metrics consume valuation observations plus a separate external cash-flow ledger. Contributions are never inferred from changes in portfolio value.
 
-Flat-price invariant with zero fees:
-- TWR = 0
-- XIRR = 0 (within numerical tolerance)
-- market gain = 0
-regardless of number/size of contributions.
+Flat-price invariant with zero fees: TWR = 0, XIRR = 0 within numerical tolerance, market gain = 0 regardless of contributions.
 
 ## Persistence boundaries
-SettingsStore owns settings only. MarketCache owns normalized historical market series only. BackupService composes explicit versioned snapshots of both.
+SettingsStore owns settings only. MarketCache owns normalized historical series only. BackupService composes versioned snapshots.
 
 Backup envelope:
 ```js
-{
-  schemaVersion: 1,
-  exportedAt: ISODateString,
-  settings: {...},
-  marketCache: {...},
-  secretsIncluded: boolean
-}
+{ schemaVersion: 1, exportedAt: ISODateString, settings: {...}, marketCache: {...}, secretsIncluded: boolean }
 ```
-Import procedure: parse -> schema validate -> semantic validate -> stage -> commit atomically. Any failure leaves existing state unchanged.
+Import: parse -> schema validate -> semantic validate -> stage -> atomic commit. Failure leaves current state unchanged.
 
 ## UI contract
-`shell.js` owns navigation. Views cannot replace the shell or monkey-patch a global render function. Each view implements:
-```js
-mount(container, appContext)
-unmount()
-```
-The shell keeps Radar / Comprar / Backtest / Ajustes navigation mounted while switching only the content outlet.
+`shell.js` owns navigation. Views cannot replace the shell or monkey-patch global rendering. Each view implements `mount(container, appContext)` and `unmount()`. Radar / Comprar / Backtest / Ajustes navigation remains mounted while only the content outlet changes.
 
 ## Error policy
-Core functions either return a valid documented result or throw/return a typed domain error. UI translates domain errors into human-readable messages. Provider/network errors never become zero-valued financial indicators.
+Core returns valid documented results or typed domain errors. UI translates errors. Provider/network errors never become zero-valued financial indicators.
 
 ## Versioning/deployment
-One application version constant is displayed in Ajustes and used to version PWA caches. A deployment contains one coherent module graph; there are no compatibility overlay scripts.
+One application version constant is displayed in Ajustes and versions PWA caches. One coherent module graph; no compatibility overlay scripts.
 
 ## Test-first implementation order
 1. Domain validation + defaults
-2. Money/conservation helpers
+2. Whole-euro allocation/rounding helper
 3. Indicators
 4. Portfolio calculations
 5. Smart DCA + adversarial cases
@@ -288,4 +224,4 @@ One application version constant is displayed in Ajustes and used to version PWA
 12. PWA/service worker
 13. Full integration/E2E fixture
 
-No later layer may be used to compensate for an error in an earlier layer.
+No later layer may compensate for an error in an earlier layer.
