@@ -21,3 +21,5 @@ jobs:
         run: node validation/v26-smart-dca-tests.js
       - name: Run V2.6 adversarial audit tests
         run: node validation/v26-audit-tests.js
+      - name: Run independent performance metric invariants
+        run: node validation/v26-metric-tests.js
