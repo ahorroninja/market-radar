@@ -23,3 +23,5 @@ jobs:
         run: node validation/v26-audit-tests.js
       - name: Run independent performance metric invariants
         run: node validation/v26-metric-tests.js
+      - name: Run no-lookahead decision-time invariants
+        run: node validation/v26-lookahead-tests.js
