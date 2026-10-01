@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { NAV_ITEMS } from '../../src/ui/shell.js';
 import { VIEW_RENDERERS } from '../../src/ui/views.js';
 import { DEFAULT_SETTINGS } from '../../src/domain/defaults.js';
+import { SETTINGS_KEY, CACHE_KEY } from '../../src/app/persistence.js';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'../..');
@@ -39,9 +40,9 @@ test('default configuration is immediately usable by Comprar',()=>{
  assert.ok(Math.abs(target-1)<1e-12);
 });
 
-test('V3 bootstrap uses only V3 storage keys and no legacy overlay names',()=>{
+test('V3 persistence owns V3 storage keys and bootstrap has no legacy overlay names',()=>{
+ assert.equal(SETTINGS_KEY,'market-radar-v3-settings');
+ assert.equal(CACHE_KEY,'market-radar-v3-cache');
  const main=read('src/main.js');
- assert.match(main,/market-radar-v3-settings/);
- assert.match(main,/market-radar-v3-cache/);
  assert.doesNotMatch(main,/v25|v251|v26-ui|monkey/i);
 });
