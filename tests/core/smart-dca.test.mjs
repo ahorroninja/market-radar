@@ -23,7 +23,7 @@ test('zero contribution stays zero',()=>{
 
 test('neutral signals and on-target portfolio anchor allocation to targets',()=>{
  const r=allocateSmartDca(request());
- assert.deepEqual(r.allocations,{world:600,value:400});
+ assert.deepEqual(r.allocations,{value:400,world:600});
 });
 
 test('deeper drawdown receives a larger tactical allocation',()=>{
@@ -38,18 +38,18 @@ test('underweight is a secondary positive tilt',()=>{
  assert.equal(Object.values(r.allocations).reduce((a,b)=>a+b,0),1000);
 });
 
-test('configured cap is relaxed only as much as mathematical feasibility requires',()=>{
+test('strategic 60 percent target is not incorrectly capped at 40 percent',()=>{
  const r=allocateSmartDca(request());
- assert.equal(r.effectiveMaxShare,.5);
- assert.ok(r.diagnostics.warnings.some(x=>x.code==='CAP_RELAXED'));
- assert.ok(Math.max(...Object.values(r.allocations))<=500);
+ assert.equal(r.tacticalCap,.4);
+ assert.equal(r.allocations.world,600);
+ assert.equal(r.allocations.value,400);
 });
 
-test('40 percent cap remains 40 percent with three eligible assets',()=>{
+test('tactical cap limits overweight above each strategic target',()=>{
  const assets=[asset('a',.34),asset('b',.33),asset('c',.33)];
- const r=allocateSmartDca(request({assets,portfolio:portfolio({a:3400,b:3300,c:3300}),indicators:[indicator('a',-.5),indicator('b',0),indicator('c',0)]}));
- assert.equal(r.effectiveMaxShare,.4);
- assert.ok(Math.max(...Object.values(r.allocations))<=400);
+ const tight={...policy,maxContributionShare:.05,drawdownStrength:10};
+ const r=allocateSmartDca(request({assets,policy:tight,portfolio:portfolio({a:3400,b:3300,c:3300}),indicators:[indicator('a',-.9),indicator('b',0),indicator('c',0)]}));
+ assert.ok(r.allocations.a<=390); // 34% strategic + max 5% tactical, rounded euros
  assert.equal(Object.values(r.allocations).reduce((a,b)=>a+b,0),1000);
 });
 
