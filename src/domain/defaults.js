@@ -1,4 +1,4 @@
-export const APP_VERSION='3.0.0-rc1';
+export const APP_VERSION='3.0.0-rc2';
 export const DEFAULT_SETTINGS=Object.freeze({
  monthlyContribution:1000,
  holdings:{},
