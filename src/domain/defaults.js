@@ -2,7 +2,7 @@ export const APP_VERSION='3.0.0-rc3';
 export const DEFAULT_SETTINGS=Object.freeze({
  monthlyContribution:1000,
  holdings:{},
- dataProvider:{type:'yahoo-worker',baseUrl:'https://market-radar-data.ahorroninja.workers.dev',symbols:{}},
+ dataProvider:{type:'yahoo-worker',baseUrl:'https://market-radar.ahorradorninja.workers.dev',symbols:{}},
  smartDcaPolicy:{drawdownStrength:1,underweightStrength:.35,maxContributionShare:.40},
  assets:[
   {id:'world',name:'MSCI World',enabled:true,targetWeight:.30,symbols:{yahoo:'URTH'}},
