@@ -4,7 +4,7 @@ import worker from "../../worker/src/index.js";
 test("worker health identifies the new Yahoo + FRED runtime", async () => {
   const r = await worker.fetch(new Request("https://example.test/health"));
   const j = await r.json();
-  assert.equal(j.version, "3.0.6");
+  assert.equal(j.version, "3.0.7");
   assert.equal(j.macro, true);
 });
 test("worker CORS permits the existing site to request macro without exposing keys in a URL", async () => {
@@ -206,6 +206,62 @@ test("vintage windows respect the 2000-date cap, paginate within each window and
         Date.parse(windows[i].start) - Date.parse(windows[i - 1].end),
         86400000,
       );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+test("pre-archive ALFRED windows are skipped, but other 400 failures remain fatal", async () => {
+  const original = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url) => {
+      const q = new URL(url).searchParams;
+      if (q.get("realtime_start") < "2010-01-01")
+        return Response.json(
+          {
+            error_message:
+              "Bad Request. The series does not exist in ALFRED but may exist in FRED.",
+          },
+          { status: 400 },
+        );
+      return Response.json({
+        count: 1,
+        observations: [
+          {
+            date: "2010-01-01",
+            value: "20",
+            realtime_start: q.get("realtime_start"),
+            realtime_end: q.get("realtime_end"),
+          },
+        ],
+      });
+    };
+    const request = () =>
+      new Request("https://example.test/macro", {
+        method: "POST",
+        body: JSON.stringify({ seriesId: "VIXCLS", apiKey: "a".repeat(32) }),
+      });
+    const r = await worker.fetch(request());
+    assert.equal(r.status, 200);
+    const j = await r.json();
+    assert.equal(j.points[0].availableFrom, "2010-01-01");
+    assert.equal(j.basis, "vintage");
+    globalThis.fetch = async () =>
+      Response.json(
+        { error_message: "Bad Request. Invalid limit." },
+        { status: 400 },
+      );
+    assert.equal((await worker.fetch(request())).status, 502);
+    globalThis.fetch = async () =>
+      Response.json(
+        {
+          error_message:
+            "Bad Request. The series does not exist in ALFRED but may exist in FRED.",
+        },
+        { status: 400 },
+      );
+    const missing = await worker.fetch(request());
+    assert.equal(missing.status, 502);
+    assert.equal((await missing.json()).error, "FRED_VINTAGE_UNAVAILABLE");
   } finally {
     globalThis.fetch = original;
   }

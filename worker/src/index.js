@@ -79,7 +79,7 @@ export default {
         {
           ok: true,
           service: "market-radar-yahoo-proxy",
-          version: "3.0.6",
+          version: "3.0.7",
           macro: true,
         },
         { headers },
@@ -132,7 +132,23 @@ export default {
                 "https://api.stlouisfed.org/fred/series/observations?" + params,
                 { headers: { Accept: "application/json" } },
               );
-              if (!res.ok) return fredFailure(res, headers, body.apiKey);
+              if (!res.ok) {
+                // ALFRED returns 400 (rather than an empty history) before its
+                // first vintage. Skip only that documented provider response.
+                if (res.status === 400) {
+                  let failure;
+                  try {
+                    failure = await res.clone().json();
+                  } catch {}
+                  if (
+                    /series does not exist in ALFRED but may exist in FRED/i.test(
+                      failure?.error_message || "",
+                    )
+                  )
+                    break;
+                }
+                return fredFailure(res, headers, body.apiKey);
+              }
               const data = await res.json();
               count = Number(data.count);
               const rows = data.observations;
@@ -154,6 +170,14 @@ export default {
               offset += rows.length;
             }
           }
+          if (!points.length)
+            return Response.json(
+              { error: "FRED_VINTAGE_UNAVAILABLE" },
+              {
+                status: 502,
+                headers: { ...headers, "Cache-Control": "no-store" },
+              },
+            );
           return Response.json(
             { seriesId: body.seriesId, basis: "vintage", points },
             { headers: { ...headers, "Cache-Control": "no-store" } },

@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.6-fred-vintage-windows";
+const CACHE = "market-radar-3.0.7-fred-archive-start";
 const CORE = [
   "./",
   "./index.html",
