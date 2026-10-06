@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.3-prospective-precision";
+const CACHE = "market-radar-3.0.3-prospective-revalidate";
 const CORE = [
   "./",
   "./index.html",
@@ -59,7 +59,7 @@ self.addEventListener("fetch", (e) => {
   )
     return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then((r) => {
         if (r.ok) {
           const copy = r.clone();
