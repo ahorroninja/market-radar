@@ -22,3 +22,9 @@ python -m http.server 5173
 El ensayo macro se bloquea si no dispone de datos vintage adecuados. La ventaja histórica de una política no demuestra su superioridad futura.
 
 Ver [auditoría de evolución](docs/PROJECT_EVOLUTION_AUDIT.md) y [contratos actuales](docs/PRODUCT_SPEC_V3.md).
+
+## Evaluación de reglas y reserva (3.0.1)
+
+Backtest permite indicar capital disponible, comisiones por orden/proporcionales, deslizamiento y remuneración del efectivo. El capital inicial se invierte en el primer cierre de ejecución, no en un cierre anterior. «Evaluar reglas y reserva» compara nueve variantes fijas, sensibilidad y bloques temporales, contando efectivo y todos los gastos. No cambia la cartera ni el motor de Comprar.
+
+El [estudio inicial](docs/RESEARCH_FINDINGS.md) no demuestra una ventaja consistente de Smart DCA ni justifica aumentar su intensidad. [Protocolo](docs/RESEARCH_PROTOCOL.md) y resultados completos reproducibles quedan publicados, incluidos los ensayos desfavorables. Los escenarios son ilustrativos, no la cartera privada del usuario.

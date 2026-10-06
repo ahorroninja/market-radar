@@ -1,6 +1,7 @@
 import { macroAt } from "./macro.js";
 import { allocateSmartDca, roundWholeEuros } from "./smart-dca.js";
 import { indicatorSnapshot } from "./radar.js";
+import { drawdown } from "./indicators.js";
 import { buildPortfolioSnapshot } from "./portfolio.js";
 import { backtestMetrics } from "./metrics.js";
 import { normalizePriceSeries } from "../data/normalize.js";
@@ -116,7 +117,41 @@ export function runBacktest(req) {
   );
   const initial = req.initialHoldings || {},
     shares = Object.fromEntries(assets.map((a) => [a.id, 0]));
-  let initialValue = 0;
+  const assumptions = {
+    initialCash: 0,
+    cashAnnualRate: 0,
+    feeRate: 0,
+    fixedFee: 0,
+    slippageRate: 0,
+    reserveMode: "immediate",
+    ...req.assumptions,
+  };
+  if (
+    ![
+      assumptions.initialCash,
+      assumptions.cashAnnualRate,
+      assumptions.feeRate,
+      assumptions.fixedFee,
+      assumptions.slippageRate,
+    ].every((x) => Number.isFinite(x) && x >= 0) ||
+    !Number.isInteger(assumptions.initialCash) ||
+    assumptions.cashAnnualRate > 0.2 ||
+    assumptions.feeRate > 0.1 ||
+    assumptions.slippageRate > 0.1 ||
+    !["immediate", "ladder"].includes(assumptions.reserveMode)
+  )
+    throw err(
+      "INVALID_ASSUMPTIONS",
+      "Hipótesis de costes o reserva inválidas.",
+    );
+  let cash = assumptions.initialCash,
+    initialValue = cash,
+    costs = 0,
+    releasedFraction = 0,
+    previousDate = req.startDate;
+  const expiry = new Date(req.startDate + "T00:00:00Z");
+  expiry.setUTCFullYear(expiry.getUTCFullYear() + 1);
+  const reserveExpiry = expiry.toISOString().slice(0, 10);
   for (const a of assets) {
     const v = initial[a.id] ?? 0;
     if (!Number.isFinite(v) || v < 0)
@@ -132,6 +167,10 @@ export function runBacktest(req) {
     observations = [];
   let lastMonth = "";
   for (const date of dates) {
+    const elapsedDays =
+      (Date.parse(date) - Date.parse(previousDate)) / 86400000;
+    cash *= (1 + assumptions.cashAnnualRate) ** (elapsedDays / 365.25);
+    previousDate = date;
     for (const a of assets)
       while (
         cursors[a.id] < histories[a.id].length &&
@@ -171,15 +210,37 @@ export function runBacktest(req) {
           value: shares[a.id] * (known[a.id].at(-1)?.close ?? 0),
         })),
       );
+      flow = req.monthlyContribution;
+      cash += flow;
+      const totalWeight = assets.reduce((s, a) => s + a.targetWeight, 0);
+      const weightedDrawdown =
+        assets.reduce(
+          (s, a) => s + a.targetWeight * (drawdown(known[a.id]) ?? 0),
+          0,
+        ) / totalWeight;
+      // Research rule fixed before evaluation: cumulative 25/50/100% at
+      // weighted drawdowns 10/20/30%, all residual after 12 months. No refill.
+      const fraction =
+        assumptions.reserveMode === "immediate" || date >= reserveExpiry
+          ? 1
+          : weightedDrawdown <= -0.3 + 1e-12
+            ? 1
+            : weightedDrawdown <= -0.2 + 1e-12
+              ? 0.5
+              : weightedDrawdown <= -0.1 + 1e-12
+                ? 0.25
+                : 0;
+      const release =
+        Math.max(0, fraction - releasedFraction) * assumptions.initialCash;
+      releasedFraction = Math.max(releasedFraction, fraction);
+      const budget = Math.floor(
+        Math.min(cash, fraction === 1 ? cash : flow + release),
+      );
       let allocations;
       if (req.strategy === "targetDca")
-        allocations = allocateTargetDca(assets, req.monthlyContribution);
+        allocations = allocateTargetDca(assets, budget);
       else if (req.strategy === "contributionRebalance")
-        allocations = allocateContributionRebalance(
-          assets,
-          portfolio,
-          req.monthlyContribution,
-        );
+        allocations = allocateContributionRebalance(assets, portfolio, budget);
       else {
         const useMacro =
           req.strategy === "smartDcaMacro" ||
@@ -195,7 +256,7 @@ export function runBacktest(req) {
               ". El ensayo macro no usa series revisadas como datos del pasado.",
           );
         allocations = allocateSmartDca({
-          contribution: req.monthlyContribution,
+          contribution: budget,
           assets,
           portfolio,
           indicators: assets.map((a) =>
@@ -204,14 +265,34 @@ export function runBacktest(req) {
           policy: { ...req.smartDcaPolicy, useMacro },
         }).allocations;
       }
-      for (const a of assets)
-        shares[a.id] += (allocations[a.id] || 0) / maps[a.id].get(date);
-      flow = req.monthlyContribution;
+      const invested = {},
+        orderCosts = {};
+      for (const a of assets) {
+        const gross = allocations[a.id] || 0;
+        if (gross <= assumptions.fixedFee) {
+          invested[a.id] = 0;
+          orderCosts[a.id] = 0;
+          continue;
+        }
+        const net =
+          (gross - assumptions.fixedFee) /
+          (1 + assumptions.feeRate + assumptions.slippageRate);
+        const expense = gross - net;
+        shares[a.id] += net / maps[a.id].get(date);
+        cash -= gross;
+        costs += expense;
+        invested[a.id] = net;
+        orderCosts[a.id] = expense;
+      }
       externalFlows.push({ date, amount: flow });
       ledger.push({
         executionDate: date,
         signalCutoff,
         allocations,
+        invested,
+        orderCosts,
+        cashRemaining: cash,
+        reserveReleasedFraction: releasedFraction,
         executionPrices: Object.fromEntries(
           assets.map((a) => [a.id, maps[a.id].get(date)]),
         ),
@@ -220,11 +301,11 @@ export function runBacktest(req) {
     }
     observations.push({
       date,
-      value: assets.reduce(
-        (s, a) => s + shares[a.id] * maps[a.id].get(date),
-        0,
-      ),
+      value:
+        cash +
+        assets.reduce((s, a) => s + shares[a.id] * maps[a.id].get(date), 0),
       externalFlow: flow,
+      cash,
     });
   }
   const terminalValue = observations.at(-1).value,
@@ -240,6 +321,9 @@ export function runBacktest(req) {
     terminalValue,
     marketGain: terminalValue - initialValue - totalContributed,
     terminalShares: shares,
+    terminalCash: cash,
+    costs,
+    assumptions,
     metrics: backtestMetrics(observations, initialValue, req.startDate),
   };
 }

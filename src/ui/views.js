@@ -7,7 +7,8 @@ import {
 } from "../core/radar.js";
 import { buildPortfolioSnapshot } from "../core/portfolio.js";
 import { allocateSmartDca } from "../core/smart-dca.js";
-import { runBacktest } from "../core/backtest.js";
+import { runBacktest, allocateTargetDca } from "../core/backtest.js";
+import { evaluateResearch } from "../core/research.js";
 import { createBackup, restoreBackup } from "../storage/backup.js";
 import { validateSettings } from "../domain/settings.js";
 export const eur = (n) =>
@@ -144,7 +145,7 @@ export function renderBuy(o, c) {
   const a = enabled(c),
     p = snapshot(c),
     unusable = a.filter((x) => !status(c, x).usable);
-  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Plan de compra</h1><p>Sólo dinero nuevo · importes en euros enteros</p></div></div><div class="panel"><label>Reserva que quieres añadir a esta aportación (€)<input id="extra" type="number" min="0" max="${c.settings.reserve ?? 0}" step="1" value="0"></label><p>Reserva registrada: ${eur(c.settings.reserve ?? 0)}. Este plan no ejecuta compras ni modifica la cartera o la reserva.</p></div><div id="plan"></div></section>`;
+  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Plan de compra</h1><p>Sólo dinero nuevo · importes en euros enteros</p></div></div>${notice("Smart DCA es una regla experimental de reparto; su ventaja frente al DCA no está demostrada. Puedes contrastarla en Backtest → Evaluar reglas y reserva.")}<div class="panel"><label>Reserva que quieres añadir a esta aportación (€)<input id="extra" type="number" min="0" max="${c.settings.reserve ?? 0}" step="1" value="0"></label><p>Reserva registrada: ${eur(c.settings.reserve ?? 0)}. Este plan no ejecuta compras ni modifica la cartera o la reserva.</p></div><div id="plan"></div></section>`;
   const container = o.querySelector("#plan");
   function plan() {
     try {
@@ -175,7 +176,8 @@ export function renderBuy(o, c) {
         indicators: indicators(c),
         policy: c.settings.smartDcaPolicy,
       });
-      container.innerHTML = `<div class="stats"><article><span>Aportación</span><b>${eur(c.settings.monthlyContribution)}</b></article><article><span>Reserva elegida</span><b>${eur(extra)}</b></article><article><span>Total a distribuir</span><b>${eur(amount)}</b></article><article><span>Total asignado</span><b>${eur(Object.values(r.allocations).reduce((s, v) => s + v, 0))}</b></article></div><div class="table-wrap panel"><table><thead><tr><th>Activo</th><th>Peso objetivo</th><th>Peso actual</th><th>Caída</th><th>Compra</th><th>Reparto</th></tr></thead><tbody>${a.map((x) => `<tr><td>${esc(x.name)}</td><td>${pct(x.targetWeight)}</td><td>${pct(p.weights[x.id])}</td><td>${pct(indicators(c).find((i) => i.assetId === x.id)?.drawdown)}</td><td class="money">${eur(r.allocations[x.id] || 0)}</td><td>${pct(amount ? (r.allocations[x.id] || 0) / amount : 0)}</td></tr>`).join("")}</tbody></table></div><details class="panel"><summary>Cómo se reparte</summary><p>Peso × [1 + intensidad de caída × caída + intensidad de déficit × déficit relativo]. Se normaliza y se redondea al euro conservando el total.</p><p>El límite táctico permite como máximo ${pct(c.settings.smartDcaPolicy.maxContributionShare)} adicionales sobre el peso objetivo de cada activo. No es un límite de peso total de cartera.</p><p>Los pesos actuales se calculan sobre las posiciones de este Radar. La reserva queda fuera; las cifras dependen de que hayas actualizado los valores en Ajustes.</p></details>`;
+      const reference = allocateTargetDca(a, amount);
+      container.innerHTML = `<div class="stats"><article><span>Aportación</span><b>${eur(c.settings.monthlyContribution)}</b></article><article><span>Reserva elegida</span><b>${eur(extra)}</b></article><article><span>Total a distribuir</span><b>${eur(amount)}</b></article><article><span>Total asignado</span><b>${eur(Object.values(r.allocations).reduce((s, v) => s + v, 0))}</b></article></div><div class="table-wrap panel"><table><thead><tr><th>Activo</th><th>Peso objetivo</th><th>Peso actual</th><th>Caída</th><th>Compra Smart DCA</th><th>DCA por pesos</th><th>Diferencia</th><th>Reparto Smart</th></tr></thead><tbody>${a.map((x) => `<tr><td>${esc(x.name)}</td><td>${pct(x.targetWeight)}</td><td>${pct(p.weights[x.id])}</td><td>${pct(indicators(c).find((i) => i.assetId === x.id)?.drawdown)}</td><td class="money">${eur(r.allocations[x.id] || 0)}</td><td>${eur(reference[x.id] || 0)}</td><td>${eur((r.allocations[x.id] || 0) - (reference[x.id] || 0))}</td><td>${pct(amount ? (r.allocations[x.id] || 0) / amount : 0)}</td></tr>`).join("")}</tbody></table></div><details class="panel"><summary>Cómo se reparte</summary><p>Peso × [1 + intensidad de caída × caída + intensidad de déficit × déficit relativo]. Se normaliza y se redondea al euro conservando el total.</p><p>El límite táctico permite como máximo ${pct(c.settings.smartDcaPolicy.maxContributionShare)} adicionales sobre el peso objetivo de cada activo. No es un límite de peso total de cartera.</p><p>Los pesos actuales se calculan sobre las posiciones de este Radar. La reserva queda fuera; las cifras dependen de que hayas actualizado los valores en Ajustes.</p></details>`;
     } catch (e) {
       container.innerHTML = notice(e.message);
     }
@@ -201,9 +203,13 @@ function equityChart(results) {
       "",
     )}</div><svg class="equity-chart" viewBox="0 0 800 240" role="img" aria-label="Comparación de valor de cartera con las mismas aportaciones"><text x="4" y="18" fill="#aebbd5" font-size="14">${esc(eur(hi))}</text>${results.map((r, i) => `<polyline fill="none" stroke="${colors[i]}" stroke-width="2.5" points="${r.observations.map((p, j) => `${40 + (j / Math.max(1, n - 1)) * 750},${220 - (p.value / hi) * 190}`).join(" ")}"/>`).join("")}<text x="4" y="238" fill="#aebbd5" font-size="14">0 €</text></svg><div class="legend"><span>${results[0].startDate}</span><span>${results[0].endDate}</span></div></div>`;
 }
+function renderResearch(study) {
+  const baseline = study.results[0].result;
+  return `<div class="panel"><h2>Evaluación de reglas y reserva</h2><p>${esc(study.conclusion)}</p><p>Protocolo ${esc(study.protocol)} · ${baseline.startDate} a ${baseline.endDate}. Se muestran las nueve variantes; no se elige un ganador ni se cambian tus ajustes.</p><div class="table-wrap"><table><thead><tr><th>Regla</th><th>Patrimonio final neto</th><th>Diferencia frente a DCA</th><th>XIRR</th><th>Caída máxima</th><th>Gastos</th><th>Efectivo final</th></tr></thead><tbody>${study.results.map((x) => `<tr><td>${esc(x.label)}</td><td>${eur(x.result.terminalValue)}</td><td>${eur(x.result.terminalValue - baseline.terminalValue)}</td><td>${pct(x.result.metrics.xirr)}</td><td>${pct(x.result.metrics.maxDrawdown)}</td><td>${eur(x.result.costs)}</td><td>${eur(x.result.terminalCash)}</td></tr>`).join("")}</tbody></table></div></div><div class="panel"><h2>Consistencia temporal</h2><div class="table-wrap"><table><thead><tr><th>Regla</th>${study.blocks.map((b) => `<th>${b.startDate} a ${b.endDate}<br>Diferencia en euros</th>`).join("")}<th>Ventanas de 3 años favorables</th></tr></thead><tbody>${study.results.map((x) => `<tr><td>${esc(x.label)}</td>${study.blocks.map((b) => `<td>${eur(b.results.find((r) => r.id === x.id).deltaWealth)}</td>`).join("")}<td>${study.windows.filter((w) => w.deltas[x.id] > 0).length} / ${study.windows.length}</td></tr>`).join("")}</tbody></table></div><p>${study.insufficient ? "Muestra insuficiente: menos de cinco ventanas. " : ""}Ventanas de tres años con paso anual: se solapan. Los bloques reinician el mismo capital; no son una cartera continua ni una prueba prospectiva.</p></div><details class="panel"><summary>Reglas y límites del estudio</summary><p>Todos reciben el mismo capital y las mismas aportaciones. La reserva alternativa libera acumulativamente 25/50/100% del capital inicial con caídas ponderadas de 10/20/30% desde máximos de 252 sesiones; remanente a los 12 meses. Decisión con precios anteriores a la compra mensual, sin reposición. El efectivo y sus intereses están incluidos. Con capital inicial cero no se evalúa el efecto de la reserva.</p><p>Las variantes de caída 0,5 y 2 miden sensibilidad; sólo infraponderación usa 0,35 y sólo caída usa 1. Las demás usan tu política, sin macro. Se simulan unidades fraccionarias ajustadas por dividendos/splits, costes editables y ningún impuesto. No se usan precios actuales para prolongar ETFs recientes hacia el pasado.</p><p>Estos resultados no validan el score completo de cinco bloques, ni identifican activos baratos, ni garantizan rentabilidad futura.</p></details>`;
+}
 export function renderBacktest(o, c) {
   const all = enabled(c);
-  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial total (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial se reparte por pesos objetivo, sin usar tu cartera actual como si hubiera existido en el pasado.</p><button>Comparar las tres estrategias</button></form><div id="br" aria-live="polite"></div></section>`;
+  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial disponible (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial está disponible en efectivo al inicio y se invierte en la primera compra. No se usa tu cartera actual como si hubiera existido en el pasado. Las unidades simuladas son fraccionarias de retorno total, no participaciones enteras.</p><fieldset><legend>Hipótesis de ejecución</legend><div class="form-grid"><label>Comisión fija por orden (€)<input name="fixedFee" type="number" min="0" step="0.01" value="0"></label><label>Comisión variable (%)<input name="feePct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Deslizamiento (%)<input name="slipPct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Interés anual del efectivo (%)<input name="cashPct" type="number" min="0" max="20" step="0.1" value="0"></label></div><p>Hipótesis constantes, no tarifas ni tipos históricos. Los gastos se pagan dentro del presupuesto. Sin impuestos personales.</p></fieldset><div class="actions"><button>Comparar las tres estrategias</button><button name="mode" value="research">Evaluar reglas y reserva</button></div><p>El estudio compara nueve reglas fijas con el DCA. Para evaluar la reserva, indica arriba el capital disponible al inicio: la referencia lo invierte inmediatamente y la alternativa lo despliega por escalones durante un máximo de 12 meses. No afecta a tus ajustes ni a Comprar.</p></form><div id="br" aria-live="polite"></div></section>`;
   const f = o.querySelector("#bt"),
     out = o.querySelector("#br");
   function chooseDates() {
@@ -244,6 +250,7 @@ export function renderBacktest(o, c) {
   chooseDates();
   f.onsubmit = (e) => {
     e.preventDefault();
+    const research = e.submitter?.value === "research";
     out.innerHTML = notice("Calculando…");
     setTimeout(() => {
       try {
@@ -264,22 +271,30 @@ export function renderBacktest(o, c) {
         const capital = Number(d.get("capital"));
         if (!Number.isInteger(capital) || capital < 0)
           throw new Error("Capital inicial inválido.");
-        const sum = assets.reduce((s, a) => s + a.targetWeight, 0),
-          req = {
-            assets,
-            histories: Object.fromEntries(
-              assets.map((a) => [a.id, series(c, a.id)]),
-            ),
-            initialHoldings: Object.fromEntries(
-              assets.map((a) => [a.id, (capital * a.targetWeight) / sum]),
-            ),
-            monthlyContribution: c.settings.monthlyContribution,
-            startDate: d.get("start"),
-            endDate: d.get("end"),
-            warmupTradingDays: 252,
-            macroHistories: c.macroHistories,
-            smartDcaPolicy: { ...c.settings.smartDcaPolicy, useMacro: false },
-          };
+        const req = {
+          assets,
+          histories: Object.fromEntries(
+            assets.map((a) => [a.id, series(c, a.id)]),
+          ),
+          initialHoldings: {},
+          assumptions: {
+            initialCash: capital,
+            fixedFee: Number(d.get("fixedFee")),
+            feeRate: Number(d.get("feePct")) / 100,
+            slippageRate: Number(d.get("slipPct")) / 100,
+            cashAnnualRate: Number(d.get("cashPct")) / 100,
+          },
+          monthlyContribution: c.settings.monthlyContribution,
+          startDate: d.get("start"),
+          endDate: d.get("end"),
+          warmupTradingDays: 252,
+          macroHistories: c.macroHistories,
+          smartDcaPolicy: { ...c.settings.smartDcaPolicy, useMacro: false },
+        };
+        if (research) {
+          out.innerHTML = renderResearch(evaluateResearch(req));
+          return;
+        }
         const results = ["targetDca", "contributionRebalance", "smartDca"].map(
           (strategy) => runBacktest({ ...req, strategy }),
         );
@@ -300,7 +315,12 @@ export function renderBacktest(o, c) {
           ["Capital inicial", (r) => eur(r.initialValue)],
           ["Aportaciones", (r) => eur(r.totalContributed)],
           ["Valor final", (r) => eur(r.terminalValue)],
-          ["Ganancia de mercado", (r) => eur(r.marketGain)],
+          [
+            "Ganancia neta (incluye interés del efectivo)",
+            (r) => eur(r.marketGain),
+          ],
+          ["Costes y deslizamiento", (r) => eur(r.costs)],
+          ["Efectivo final", (r) => eur(r.terminalCash)],
           ["TWR anualizado", (r) => pct(r.metrics.annualizedTwr)],
           ["XIRR", (r) => pct(r.metrics.xirr)],
           ["Caída máxima del rendimiento", (r) => pct(r.metrics.maxDrawdown)],
@@ -312,7 +332,7 @@ export function renderBacktest(o, c) {
           .map((x) => `<th>${x}</th>`)
           .join(
             "",
-          )}</tr></thead><tbody>${metrics.map(([name, fn]) => `<tr><td>${name}</td>${results.map((r) => `<td>${fn(r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${notice(`${results[0].ledger.length} compras mensuales · período común ${results[0].startDate} a ${results[0].endDate}. Dividendos/splits según cierre ajustado de Yahoo. Sin comisiones, impuestos, intereses de la reserva ni deslizamiento. Días comunes a todos los activos; volatilidad anualizada a 252 sesiones.`)}<div class="panel"><h2>Ventanas móviles · ${d.get("rolling")} años</h2><div class="stats"><article><span>Ventanas completas</span><b>${rolling.n}</b></article><article><span>Smart DCA supera a DCA</span><b>${rolling.wins} / ${rolling.n}</b></article><article><span>Diferencia mediana TWR anual</span><b>${pct(rolling.median)}</b></article><article><span>P10 / P90</span><b>${pct(rolling.p10)} / ${pct(rolling.p90)}</b></article></div><p>${rolling.insufficient ? "Muestra insuficiente: menos de 5 ventanas válidas. " : ""}${rolling.overlapping ? "Las ventanas se solapan. No son pruebas estadísticas independientes." : "Ventanas sin solapamiento; resultados descriptivos."} Paso de 12 meses; mismo calentamiento previo en cada ensayo.</p></div><details class="panel"><summary>Auditar las compras Smart DCA</summary><div class="table-wrap"><table><thead><tr><th>Compra</th><th>Última información</th><th>Reparto</th></tr></thead><tbody>${results[2].ledger
+          )}</tr></thead><tbody>${metrics.map(([name, fn]) => `<tr><td>${name}</td>${results.map((r) => `<td>${fn(r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>${notice(`${results[0].ledger.length} compras mensuales · período común ${results[0].startDate} a ${results[0].endDate}. Dividendos/splits según cierre ajustado de Yahoo. Comisiones, deslizamiento y efectivo según las hipótesis indicadas. Sin impuestos personales; unidades sintéticas fraccionarias. Días comunes a todos los activos; volatilidad anualizada a 252 sesiones.`)}<div class="panel"><h2>Ventanas móviles · ${d.get("rolling")} años</h2><div class="stats"><article><span>Ventanas completas</span><b>${rolling.n}</b></article><article><span>Smart DCA supera a DCA</span><b>${rolling.wins} / ${rolling.n}</b></article><article><span>Diferencia mediana TWR anual</span><b>${pct(rolling.median)}</b></article><article><span>P10 / P90</span><b>${pct(rolling.p10)} / ${pct(rolling.p90)}</b></article></div><p>${rolling.insufficient ? "Muestra insuficiente: menos de 5 ventanas válidas. " : ""}${rolling.overlapping ? "Las ventanas se solapan. No son pruebas estadísticas independientes." : "Ventanas sin solapamiento; resultados descriptivos."} Paso de 12 meses; mismo calentamiento previo en cada ensayo.</p></div><details class="panel"><summary>Auditar las compras Smart DCA</summary><div class="table-wrap"><table><thead><tr><th>Compra</th><th>Última información</th><th>Presupuesto → inversión neta</th><th>Efectivo restante</th></tr></thead><tbody>${results[2].ledger
           .map(
             (l) =>
               `<tr><td>${l.executionDate}</td><td>${l.signalCutoff}</td><td>${Object.entries(
@@ -320,9 +340,9 @@ export function renderBacktest(o, c) {
               )
                 .map(
                   ([id, v]) =>
-                    `${esc(assets.find((a) => a.id === id).name)}: ${eur(v)}`,
+                    `${esc(assets.find((a) => a.id === id).name)}: ${eur(v)} → ${eur(l.invested[id])} (gasto ${eur(l.orderCosts[id])})`,
                 )
-                .join(" · ")}</td></tr>`,
+                .join(" · ")}</td><td>${eur(l.cashRemaining)}</td></tr>`,
           )
           .join(
             "",
