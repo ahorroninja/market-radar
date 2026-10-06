@@ -32,12 +32,18 @@ async function fredFetch(url, options = {}) {
   return response;
 }
 
-async function fredFailure(response, headers) {
-  // Classify the provider's error; never relay its body or a credential-bearing URL.
+async function fredFailure(response, headers, apiKey = "") {
+  // Return only the provider error message, with credentials and URLs removed.
   let message = "";
   try {
     message = (await response.json()).error_message || "";
   } catch {}
+  const detail = String(message)
+    .replaceAll(apiKey || "__NO_CREDENTIAL__", "[redacted]")
+    .replace(/https?:\/\/\S+/gi, "[URL removed]")
+    .replace(/[a-zA-Z0-9_-]{24,}/g, "[redacted]")
+    .replace(/[\x00-\x1f\x7f]/g, " ")
+    .slice(0, 240);
   const keyRejected = /api[_ ]?key|registered|not valid.*key/i.test(message);
   const code = keyRejected
     ? "FRED_KEY_REJECTED"
@@ -47,7 +53,7 @@ async function fredFailure(response, headers) {
         ? "FRED_TEMPORARY"
         : "FRED_REQUEST_REJECTED";
   return Response.json(
-    { error: code, upstreamStatus: response.status },
+    { error: code, upstreamStatus: response.status, detail },
     {
       status: keyRejected ? 422 : 502,
       headers: { ...headers, "Cache-Control": "no-store" },
@@ -73,7 +79,7 @@ export default {
         {
           ok: true,
           service: "market-radar-yahoo-proxy",
-          version: "3.0.4",
+          version: "3.0.5",
           macro: true,
         },
         { headers },
@@ -119,7 +125,7 @@ export default {
               "https://api.stlouisfed.org/fred/series/observations?" + params,
               { headers: { Accept: "application/json" } },
             );
-            if (!res.ok) return fredFailure(res, headers);
+            if (!res.ok) return fredFailure(res, headers, body.apiKey);
             const data = await res.json();
             count = data.count;
             const rows = data.observations || [];

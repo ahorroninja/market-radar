@@ -4,7 +4,7 @@ import worker from "../../worker/src/index.js";
 test("worker health identifies the new Yahoo + FRED runtime", async () => {
   const r = await worker.fetch(new Request("https://example.test/health"));
   const j = await r.json();
-  assert.equal(j.version, "3.0.4");
+  assert.equal(j.version, "3.0.5");
   assert.equal(j.macro, true);
 });
 test("worker CORS permits the existing site to request macro without exposing keys in a URL", async () => {
@@ -69,7 +69,7 @@ test("FRED rejects credentials without leaking its error body", async () => {
     globalThis.fetch = async () => {
       calls++;
       return Response.json(
-        { error_message: "The api_key SECRET is not registered." },
+        { error_message: "The api_key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa is not registered. https://provider.test/?api_key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
         { status: 400 },
       );
     };
@@ -83,6 +83,7 @@ test("FRED rejects credentials without leaking its error body", async () => {
     assert.deepEqual(await r.json(), {
       error: "FRED_KEY_REJECTED",
       upstreamStatus: 400,
+      detail: "The api_key [redacted] is not registered. [URL removed]",
     });
     assert.equal(r.headers.get("cache-control"), "no-store");
     assert.equal(calls, 1);
@@ -145,6 +146,7 @@ test("FRED exhausted rate limits are explicit and never silently replaced by rev
     assert.deepEqual(await r.json(), {
       error: "FRED_RATE_LIMIT",
       upstreamStatus: 429,
+      detail: "",
     });
     assert.equal(calls, 2);
   } finally {
