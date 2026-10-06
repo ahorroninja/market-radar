@@ -1,0 +1,1731 @@
+{
+  "protocol": "allocation-reserve-1",
+  "generatedAt": "2026-10-06T11:12:56.193Z",
+  "dataHash": "9f58514ffe9e47c47d8ac249783c3a3d363c7a21a33e68c6848fa05a0b2afdad",
+  "source": "Yahoo Finance adjusted daily closes, converted to EUR; input snapshot identified by SHA-256",
+  "warning": "Retrospective study. Current selected ETFs, adjusted history and overlapping windows. No demonstrated future advantage.",
+  "scenarios": [
+    {
+      "universe": "core4",
+      "assets": [
+        {
+          "id": "world",
+          "symbol": "SWDA.L",
+          "weight": 0.2976190476190476
+        },
+        {
+          "id": "sp500",
+          "symbol": "CSPX.L",
+          "weight": 0.05952380952380952
+        },
+        {
+          "id": "value",
+          "symbol": "IWVL.L",
+          "weight": 0.17857142857142858
+        },
+        {
+          "id": "em-value",
+          "symbol": "EMVL.L",
+          "weight": 0.11904761904761904
+        }
+      ],
+      "assumptions": {
+        "id": "net-reserve",
+        "initialCash": 6000,
+        "fixedFee": 1,
+        "feeRate": 0.0005,
+        "slippageRate": 0.0005,
+        "cashAnnualRate": 0.02
+      },
+      "startDate": "2019-12-13",
+      "endDate": "2026-10-02",
+      "blocks": [
+        {
+          "label": "Primer bloque temporal",
+          "startDate": "2019-12-13",
+          "endDate": "2023-05-07",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": 143.1092241190927
+            },
+            {
+              "id": "draw",
+              "deltaWealth": 12.734205539076356
+            },
+            {
+              "id": "under",
+              "deltaWealth": 6.60270064251381
+            },
+            {
+              "id": "smart",
+              "deltaWealth": 17.11113501883665
+            },
+            {
+              "id": "weak",
+              "deltaWealth": 12.341544919079752
+            },
+            {
+              "id": "strong",
+              "deltaWealth": 25.75493465301406
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": 723.5782830780881
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": 746.5513656124385
+            }
+          ]
+        },
+        {
+          "label": "Segundo bloque temporal",
+          "startDate": "2023-05-08",
+          "endDate": "2026-10-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": -402.6095066338894
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -58.60168139387679
+            },
+            {
+              "id": "under",
+              "deltaWealth": 10.708330781373661
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -41.358351352464524
+            },
+            {
+              "id": "weak",
+              "deltaWealth": -16.61831826879643
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -79.44208346030791
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": -2147.6709331327147
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -2194.767281193883
+            }
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "startDate": "2019-12-13",
+          "endDate": "2022-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 93.53660683013004,
+            "draw": 9.634510862699244,
+            "under": 5.409065490530338,
+            "smart": 12.992078168914304,
+            "weak": 9.681687742297072,
+            "strong": 19.025990122710937,
+            "reserveDca": 715.7249016074275,
+            "reserveSmart": 735.203264785785
+          }
+        },
+        {
+          "startDate": "2020-12-13",
+          "endDate": "2023-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 59.15654542149423,
+            "draw": 5.94786448431114,
+            "under": -5.048958773368213,
+            "smart": 2.3536833430698607,
+            "weak": -1.3905879948215443,
+            "strong": 8.195238744243397,
+            "reserveDca": -1779.304771910749,
+            "reserveSmart": -1786.0699093112562
+          }
+        },
+        {
+          "startDate": "2021-12-13",
+          "endDate": "2024-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 31.800130427036493,
+            "draw": 12.225580132871983,
+            "under": 5.6122073365040706,
+            "smart": 14.809195400521276,
+            "weak": 10.298431204690132,
+            "strong": 20.397747502924176,
+            "reserveDca": 914.5813311461679,
+            "reserveSmart": 937.1068211659076
+          }
+        },
+        {
+          "startDate": "2022-12-13",
+          "endDate": "2025-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 89.0933101167102,
+            "draw": 12.778713828956825,
+            "under": 5.169141942315036,
+            "smart": 17.271876291815715,
+            "weak": 11.352726387573057,
+            "strong": 29.097267450510117,
+            "reserveDca": -634.4295790661927,
+            "reserveSmart": -623.2055054985976
+          }
+        }
+      ],
+      "insufficient": true,
+      "results": [
+        {
+          "id": "dca",
+          "label": "DCA objetivo",
+          "strategy": "targetDca",
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171391.0803098896,
+          "deltaWealth": 0,
+          "costs": 420.5794205794078,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.458271684550326,
+            "annualizedTwr": 0.14134126239255318,
+            "xirr": 0.17790961404268296,
+            "maxDrawdown": -0.3283986220016678,
+            "volatility": 0.16247511973238954,
+            "sharpe": 0.8953837163638954
+          }
+        },
+        {
+          "id": "rebalance",
+          "label": "Rebalanceo por aportaciones",
+          "strategy": "contributionRebalance",
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171980.10466725787,
+          "deltaWealth": 589.0243573682674,
+          "costs": 363.6363636363542,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4701637494929498,
+            "annualizedTwr": 0.14215112701049448,
+            "xirr": 0.1788389656341256,
+            "maxDrawdown": -0.32837707143028205,
+            "volatility": 0.16250278236014515,
+            "sharpe": 0.8996284383226738
+          }
+        },
+        {
+          "id": "draw",
+          "label": "Sólo caída",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171503.55812137475,
+          "deltaWealth": 112.4778114851506,
+          "costs": 420.57942057941045,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4602888107716292,
+            "annualizedTwr": 0.14147886624924655,
+            "xirr": 0.17808732208607048,
+            "maxDrawdown": -0.3283340525465709,
+            "volatility": 0.16254310821145324,
+            "sharpe": 0.8958195442883979
+          }
+        },
+        {
+          "id": "under",
+          "label": "Sólo infraponderación",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171533.2029445088,
+          "deltaWealth": 142.12263461921248,
+          "costs": 420.5794205794095,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4605184297771086,
+            "annualizedTwr": 0.14149452424460351,
+            "xirr": 0.1781341399801119,
+            "maxDrawdown": -0.328402572567829,
+            "volatility": 0.162522048167419,
+            "sharpe": 0.8959984656943569
+          }
+        },
+        {
+          "id": "smart",
+          "label": "Smart DCA configurado",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171621.57192381372,
+          "deltaWealth": 230.49161392412498,
+          "costs": 420.57942057941096,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.462116321586226,
+            "annualizedTwr": 0.14160345189924484,
+            "xirr": 0.17827365333317846,
+            "maxDrawdown": -0.32833628461077535,
+            "volatility": 0.16258490845823523,
+            "sharpe": 0.8963024953511339
+          }
+        },
+        {
+          "id": "weak",
+          "label": "Caída suave (0,5)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0.5,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171579.73627155347,
+          "deltaWealth": 188.65596166386968,
+          "costs": 420.57942057941045,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4613726690260949,
+            "annualizedTwr": 0.1415527649014514,
+            "xirr": 0.17820761372387828,
+            "maxDrawdown": -0.32836609911344694,
+            "volatility": 0.16255486631280539,
+            "sharpe": 0.8961646113859326
+          }
+        },
+        {
+          "id": "strong",
+          "label": "Caída intensa (2)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 2,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 171704.20168367826,
+          "deltaWealth": 313.12137378865737,
+          "costs": 420.57942057941125,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4635331410954828,
+            "annualizedTwr": 0.14169998549876373,
+            "xirr": 0.17840404186870773,
+            "maxDrawdown": -0.32827765335205394,
+            "volatility": 0.16264490072741294,
+            "sharpe": 0.8965524429454768
+          }
+        },
+        {
+          "id": "reserveDca",
+          "label": "DCA + reserva escalonada",
+          "strategy": "targetDca",
+          "reserveMode": "ladder",
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 172919.2627314739,
+          "deltaWealth": 1528.1824215842935,
+          "costs": 420.6583416583284,
+          "terminalCash": 0.5773141240376403,
+          "metrics": {
+            "twr": 1.6673798828277064,
+            "annualizedTwr": 0.15511908740693747,
+            "xirr": 0.18031429108130798,
+            "maxDrawdown": -0.1911373488821223,
+            "volatility": 0.14243253375636258,
+            "sharpe": 1.0838177078171642
+          }
+        },
+        {
+          "id": "reserveSmart",
+          "label": "Smart + reserva escalonada",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "reserveMode": "ladder",
+          "initialValue": 6000,
+          "totalContributed": 83000,
+          "terminalValue": 173176.31473284095,
+          "deltaWealth": 1785.2344229513546,
+          "costs": 420.65834165833166,
+          "terminalCash": 0.5773141240376403,
+          "metrics": {
+            "twr": 1.672125556402742,
+            "annualizedTwr": 0.1554209256516006,
+            "xirr": 0.18071672036441794,
+            "maxDrawdown": -0.1908676700278381,
+            "volatility": 0.1425547676158004,
+            "sharpe": 1.0848439499074543
+          }
+        }
+      ]
+    },
+    {
+      "universe": "core4",
+      "assets": [
+        {
+          "id": "world",
+          "symbol": "SWDA.L",
+          "weight": 0.2976190476190476
+        },
+        {
+          "id": "sp500",
+          "symbol": "CSPX.L",
+          "weight": 0.05952380952380952
+        },
+        {
+          "id": "value",
+          "symbol": "IWVL.L",
+          "weight": 0.17857142857142858
+        },
+        {
+          "id": "em-value",
+          "symbol": "EMVL.L",
+          "weight": 0.11904761904761904
+        }
+      ],
+      "assumptions": {
+        "id": "gross-no-reserve",
+        "initialCash": 0,
+        "fixedFee": 0,
+        "feeRate": 0,
+        "slippageRate": 0,
+        "cashAnnualRate": 0
+      },
+      "startDate": "2019-12-13",
+      "endDate": "2026-10-02",
+      "blocks": [
+        {
+          "label": "Primer bloque temporal",
+          "startDate": "2019-12-13",
+          "endDate": "2023-05-07",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": 110.68466923953383
+            },
+            {
+              "id": "draw",
+              "deltaWealth": 14.328373484226177
+            },
+            {
+              "id": "under",
+              "deltaWealth": 4.742854406504193
+            },
+            {
+              "id": "smart",
+              "deltaWealth": 17.51449405112362
+            },
+            {
+              "id": "weak",
+              "deltaWealth": 11.15249578905059
+            },
+            {
+              "id": "strong",
+              "deltaWealth": 28.1044373716868
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": 17.51449405112362
+            }
+          ]
+        },
+        {
+          "label": "Segundo bloque temporal",
+          "startDate": "2023-05-08",
+          "endDate": "2026-10-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": -387.7737701427541
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -67.22896339145518
+            },
+            {
+              "id": "under",
+              "deltaWealth": 2.220417938740866
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -59.388138415582944
+            },
+            {
+              "id": "weak",
+              "deltaWealth": -30.842992248144583
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -103.11432025651447
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -59.388138415582944
+            }
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "startDate": "2019-12-13",
+          "endDate": "2022-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 71.03506583505077,
+            "draw": 11.410355796426302,
+            "under": 3.330025323171867,
+            "smart": 13.466835626997636,
+            "weak": 8.413295994017972,
+            "strong": 21.68573549327266,
+            "reserveDca": 0,
+            "reserveSmart": 13.466835626997636
+          }
+        },
+        {
+          "startDate": "2020-12-13",
+          "endDate": "2023-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 42.634394770051586,
+            "draw": -1.3853820841904962,
+            "under": -3.989247631834587,
+            "smart": -3.7959313271276187,
+            "weak": -4.4091095202747965,
+            "strong": -4.565741130281822,
+            "reserveDca": 0,
+            "reserveSmart": -3.7959313271276187
+          }
+        },
+        {
+          "startDate": "2021-12-13",
+          "endDate": "2024-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -7.456204021429585,
+            "draw": 14.571228348962904,
+            "under": 3.3353172332717804,
+            "smart": 13.440725044725696,
+            "weak": 8.865831922812504,
+            "strong": 20.93283082904236,
+            "reserveDca": 0,
+            "reserveSmart": 13.440725044725696
+          }
+        },
+        {
+          "startDate": "2022-12-13",
+          "endDate": "2025-12-12",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 56.164719983738905,
+            "draw": 6.180836957631982,
+            "under": 4.604511045617983,
+            "smart": 9.863383464267827,
+            "weak": 6.959142600622727,
+            "strong": 15.989003000868252,
+            "reserveDca": 0,
+            "reserveSmart": 9.863383464267827
+          }
+        }
+      ],
+      "insufficient": true,
+      "results": [
+        {
+          "id": "dca",
+          "label": "DCA objetivo",
+          "strategy": "targetDca",
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157397.66346383624,
+          "deltaWealth": 0,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4940883014420088,
+            "annualizedTwr": 0.14377039386765533,
+            "xirr": 0.18593090896678355,
+            "maxDrawdown": -0.3280385340635168,
+            "volatility": 0.1626012444305839,
+            "sharpe": 0.9078925693082107
+          }
+        },
+        {
+          "id": "rebalance",
+          "label": "Rebalanceo por aportaciones",
+          "strategy": "contributionRebalance",
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157625.1094948204,
+          "deltaWealth": 227.446030984167,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.5014948407697384,
+            "annualizedTwr": 0.14426899904308987,
+            "xirr": 0.18635056517414883,
+            "maxDrawdown": -0.32797757099252134,
+            "volatility": 0.16248708687351907,
+            "sharpe": 0.9111019055298841
+          }
+        },
+        {
+          "id": "draw",
+          "label": "Sólo caída",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157506.19768120954,
+          "deltaWealth": 108.53421737329336,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4967455232838573,
+            "annualizedTwr": 0.14394942205294692,
+            "xirr": 0.18613123726282338,
+            "maxDrawdown": -0.32793841760346676,
+            "volatility": 0.16267760013481877,
+            "sharpe": 0.9085054754066066
+          }
+        },
+        {
+          "id": "under",
+          "label": "Sólo infraponderación",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157509.94743749703,
+          "deltaWealth": 112.2839736607857,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.496235930730482,
+            "annualizedTwr": 0.14391510126443063,
+            "xirr": 0.18613815600565814,
+            "maxDrawdown": -0.32803116750978745,
+            "volatility": 0.1626431175627558,
+            "sharpe": 0.9084787397765066
+          }
+        },
+        {
+          "id": "smart",
+          "label": "Smart DCA configurado",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157593.402777482,
+          "deltaWealth": 195.739313645754,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4983114436215952,
+            "annualizedTwr": 0.14405484857878537,
+            "xirr": 0.18629209927598633,
+            "maxDrawdown": -0.3279313049196394,
+            "volatility": 0.16271571281082078,
+            "sharpe": 0.9088974253329609
+          }
+        },
+        {
+          "id": "weak",
+          "label": "Caída suave (0,5)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0.5,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157552.7222742964,
+          "deltaWealth": 155.05881046014838,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4972718106070593,
+            "annualizedTwr": 0.14398486095373086,
+            "xirr": 0.1862170692281745,
+            "maxDrawdown": -0.327974116517744,
+            "volatility": 0.1626826115743122,
+            "sharpe": 0.9086729113149051
+          }
+        },
+        {
+          "id": "strong",
+          "label": "Caída intensa (2)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 2,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157670.57634199603,
+          "deltaWealth": 272.91287815978285,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.5002435557248304,
+            "annualizedTwr": 0.14418485153104577,
+            "xirr": 0.1864343841210948,
+            "maxDrawdown": -0.32783909688841595,
+            "volatility": 0.1627830928110146,
+            "sharpe": 0.9092873227325293
+          }
+        },
+        {
+          "id": "reserveDca",
+          "label": "DCA + reserva escalonada",
+          "strategy": "targetDca",
+          "reserveMode": "ladder",
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157397.66346383624,
+          "deltaWealth": 0,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4940883014420088,
+            "annualizedTwr": 0.14377039386765533,
+            "xirr": 0.18593090896678355,
+            "maxDrawdown": -0.3280385340635168,
+            "volatility": 0.1626012444305839,
+            "sharpe": 0.9078925693082107
+          }
+        },
+        {
+          "id": "reserveSmart",
+          "label": "Smart + reserva escalonada",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "reserveMode": "ladder",
+          "initialValue": 0,
+          "totalContributed": 83000,
+          "terminalValue": 157593.402777482,
+          "deltaWealth": 195.739313645754,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 1.4983114436215952,
+            "annualizedTwr": 0.14405484857878537,
+            "xirr": 0.18629209927598633,
+            "maxDrawdown": -0.3279313049196394,
+            "volatility": 0.16271571281082078,
+            "sharpe": 0.9088974253329609
+          }
+        }
+      ]
+    },
+    {
+      "universe": "long3",
+      "assets": [
+        {
+          "id": "world",
+          "symbol": "SWDA.L",
+          "weight": 0.2976190476190476
+        },
+        {
+          "id": "sp500",
+          "symbol": "CSPX.L",
+          "weight": 0.05952380952380952
+        },
+        {
+          "id": "value",
+          "symbol": "IWVL.L",
+          "weight": 0.17857142857142858
+        }
+      ],
+      "assumptions": {
+        "id": "net-reserve",
+        "initialCash": 6000,
+        "fixedFee": 1,
+        "feeRate": 0.0005,
+        "slippageRate": 0.0005,
+        "cashAnnualRate": 0.02
+      },
+      "startDate": "2015-10-05",
+      "endDate": "2026-10-02",
+      "blocks": [
+        {
+          "label": "Primer bloque temporal",
+          "startDate": "2015-10-05",
+          "endDate": "2021-04-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": -249.22715394644183
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -66.02444682834903
+            },
+            {
+              "id": "under",
+              "deltaWealth": -12.146027061360655
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -64.37166266838904
+            },
+            {
+              "id": "weak",
+              "deltaWealth": -38.43789399575326
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -109.52407032132032
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": -383.2991504479578
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -435.99609489389695
+            }
+          ]
+        },
+        {
+          "label": "Segundo bloque temporal",
+          "startDate": "2021-04-03",
+          "endDate": "2026-10-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": 17.03956186545838
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -71.27834874833934
+            },
+            {
+              "id": "under",
+              "deltaWealth": 43.4441847538983
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -33.824273202364566
+            },
+            {
+              "id": "weak",
+              "deltaWealth": 1.3773343600187218
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -96.00848808453884
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": -1132.7858355295903
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -1184.0827260091028
+            }
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "startDate": "2015-10-05",
+          "endDate": "2018-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 6.043690332036931,
+            "draw": -10.930105116101913,
+            "under": -0.4191469949146267,
+            "smart": -9.82808302079502,
+            "weak": -5.457779528696847,
+            "strong": -17.341159778443398,
+            "reserveDca": -293.6609397147331,
+            "reserveSmart": -300.7115567951769
+          }
+        },
+        {
+          "startDate": "2016-10-05",
+          "endDate": "2019-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -58.27019080391619,
+            "draw": -12.340304992154415,
+            "under": -3.1511307114560623,
+            "smart": -12.931422932124406,
+            "weak": -7.962882104809978,
+            "strong": -21.953266030461236,
+            "reserveDca": -1010.7301399341595,
+            "reserveSmart": -1017.5337250001248
+          }
+        },
+        {
+          "startDate": "2017-10-05",
+          "endDate": "2020-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -331.76730861923716,
+            "draw": -22.542601128552633,
+            "under": -23.553879200160736,
+            "smart": -42.30793110225932,
+            "weak": -32.21813483335427,
+            "strong": -57.68828924225818,
+            "reserveDca": -208.4663585533999,
+            "reserveSmart": -255.2353735530196
+          }
+        },
+        {
+          "startDate": "2018-10-05",
+          "endDate": "2021-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -80.80110432871152,
+            "draw": -10.009574443967722,
+            "under": -9.46997781562095,
+            "smart": -16.23962260792905,
+            "weak": -13.12249095198058,
+            "strong": -24.439498347317567,
+            "reserveDca": -70.31837285110669,
+            "reserveSmart": -86.28607442023349
+          }
+        },
+        {
+          "startDate": "2019-10-05",
+          "endDate": "2022-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 60.714741394149314,
+            "draw": -0.05493432754883543,
+            "under": 0.803742593358038,
+            "smart": 1.0253005934791872,
+            "weak": 1.4956188667492825,
+            "strong": 0.9986649062484503,
+            "reserveDca": 654.6014497816432,
+            "reserveSmart": 663.9890568078044
+          }
+        },
+        {
+          "startDate": "2020-10-05",
+          "endDate": "2023-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 70.97812703128875,
+            "draw": 31.774660539405886,
+            "under": 1.130205989771639,
+            "smart": 30.894521023597918,
+            "weak": 17.071857366936456,
+            "strong": 55.25856490353908,
+            "reserveDca": -1676.9460963152524,
+            "reserveSmart": -1657.7861296935735
+          }
+        },
+        {
+          "startDate": "2021-10-05",
+          "endDate": "2024-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 23.44149475852464,
+            "draw": 13.839845482892997,
+            "under": 0.19781669416261138,
+            "smart": 13.70915889536991,
+            "weak": 7.4831841416380485,
+            "strong": 25.7708964525591,
+            "reserveDca": 133.72263802110683,
+            "reserveSmart": 146.77752136043273
+          }
+        },
+        {
+          "startDate": "2022-10-05",
+          "endDate": "2025-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 67.3057510965009,
+            "draw": 6.251603742974112,
+            "under": 3.9880177185550565,
+            "smart": 10.408016434885212,
+            "weak": 7.080117356526898,
+            "strong": 15.318645621315227,
+            "reserveDca": -375.12174204490293,
+            "reserveSmart": -365.9627915077217
+          }
+        }
+      ],
+      "insufficient": false,
+      "results": [
+        {
+          "id": "dca",
+          "label": "DCA objetivo",
+          "strategy": "targetDca",
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323242.1675694174,
+          "deltaWealth": 0,
+          "costs": 537.4625374625213,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.600226492727374,
+            "annualizedTwr": 0.12359572771747462,
+            "xirr": 0.13990236363836184,
+            "maxDrawdown": -0.33389504076517573,
+            "volatility": 0.15143755908612666,
+            "sharpe": 0.8438317393907464
+          }
+        },
+        {
+          "id": "rebalance",
+          "label": "Rebalanceo por aportaciones",
+          "strategy": "contributionRebalance",
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 325750.37879418634,
+          "deltaWealth": 2508.211224768951,
+          "costs": 453.54645354643833,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6198431748075843,
+            "annualizedTwr": 0.12415129585639817,
+            "xirr": 0.14113882552627294,
+            "maxDrawdown": -0.3343881751174925,
+            "volatility": 0.15168031002060314,
+            "sharpe": 0.8459801124603212
+          }
+        },
+        {
+          "id": "draw",
+          "label": "Sólo caída",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323247.12910912477,
+          "deltaWealth": 4.961539707379416,
+          "costs": 537.462537462524,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.5975333693529286,
+            "annualizedTwr": 0.1235192404961738,
+            "xirr": 0.13990481945967304,
+            "maxDrawdown": -0.3339603478963713,
+            "volatility": 0.1514535038621696,
+            "sharpe": 0.843310664910025
+          }
+        },
+        {
+          "id": "under",
+          "label": "Sólo infraponderación",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323560.8418904707,
+          "deltaWealth": 318.6743210533168,
+          "costs": 537.4625374625241,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.603278127099438,
+            "annualizedTwr": 0.12368233415443464,
+            "xirr": 0.14006001788162953,
+            "maxDrawdown": -0.3339235350744375,
+            "volatility": 0.15146066606185424,
+            "sharpe": 0.8442341173546063
+          }
+        },
+        {
+          "id": "smart",
+          "label": "Smart DCA configurado",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323516.81309841375,
+          "deltaWealth": 274.6455289963633,
+          "costs": 537.4625374625231,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6004499679019797,
+            "annualizedTwr": 0.12360207228411979,
+            "xirr": 0.14003824573267526,
+            "maxDrawdown": -0.3339742382310813,
+            "volatility": 0.15147095030081248,
+            "sharpe": 0.843716775607203
+          }
+        },
+        {
+          "id": "weak",
+          "label": "Caída suave (0,5)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0.5,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323537.78073465405,
+          "deltaWealth": 295.6131652366603,
+          "costs": 537.4625374625242,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6017961468000337,
+            "annualizedTwr": 0.12364028337287869,
+            "xirr": 0.14004861457542928,
+            "maxDrawdown": -0.3339488966321512,
+            "volatility": 0.1514655733535063,
+            "sharpe": 0.8439652578187615
+          }
+        },
+        {
+          "id": "strong",
+          "label": "Caída intensa (2)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 2,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 323484.2492462017,
+          "deltaWealth": 242.08167678432073,
+          "costs": 537.462537462522,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.5981657298192284,
+            "annualizedTwr": 0.12353720479930419,
+            "xirr": 0.14002214096729104,
+            "maxDrawdown": -0.33401938053054026,
+            "volatility": 0.15148077667125742,
+            "sharpe": 0.8432917946411127
+          }
+        },
+        {
+          "id": "reserveDca",
+          "label": "DCA + reserva escalonada",
+          "strategy": "targetDca",
+          "reserveMode": "ladder",
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 322446.4448223687,
+          "deltaWealth": -795.7227470487123,
+          "costs": 537.559440559424,
+          "terminalCash": 0.0008317783714186213,
+          "metrics": {
+            "twr": 2.5238912972611796,
+            "annualizedTwr": 0.12140730194366989,
+            "xirr": 0.13950798917020146,
+            "maxDrawdown": -0.333897985216573,
+            "volatility": 0.14577771174331247,
+            "sharpe": 0.8574563773289412
+          }
+        },
+        {
+          "id": "reserveSmart",
+          "label": "Smart + reserva escalonada",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "reserveMode": "ladder",
+          "initialValue": 6000,
+          "totalContributed": 133000,
+          "terminalValue": 322735.64185920486,
+          "deltaWealth": -506.52571021253243,
+          "costs": 537.5594405594262,
+          "terminalCash": 0.0008317783714186213,
+          "metrics": {
+            "twr": 2.524886800759651,
+            "annualizedTwr": 0.12143611786997455,
+            "xirr": 0.13965143878867592,
+            "maxDrawdown": -0.3339719028577256,
+            "volatility": 0.14580986299820795,
+            "sharpe": 0.8574758417284466
+          }
+        }
+      ]
+    },
+    {
+      "universe": "long3",
+      "assets": [
+        {
+          "id": "world",
+          "symbol": "SWDA.L",
+          "weight": 0.2976190476190476
+        },
+        {
+          "id": "sp500",
+          "symbol": "CSPX.L",
+          "weight": 0.05952380952380952
+        },
+        {
+          "id": "value",
+          "symbol": "IWVL.L",
+          "weight": 0.17857142857142858
+        }
+      ],
+      "assumptions": {
+        "id": "gross-no-reserve",
+        "initialCash": 0,
+        "fixedFee": 0,
+        "feeRate": 0,
+        "slippageRate": 0,
+        "cashAnnualRate": 0
+      },
+      "startDate": "2015-10-05",
+      "endDate": "2026-10-02",
+      "blocks": [
+        {
+          "label": "Primer bloque temporal",
+          "startDate": "2015-10-05",
+          "endDate": "2021-04-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": -223.23896336003963
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -54.30534966524283
+            },
+            {
+              "id": "under",
+              "deltaWealth": -8.282351170593756
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -47.290126130130375
+            },
+            {
+              "id": "weak",
+              "deltaWealth": -27.981083322665654
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -81.34540210793784
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -47.290126130130375
+            }
+          ]
+        },
+        {
+          "label": "Segundo bloque temporal",
+          "startDate": "2021-04-03",
+          "endDate": "2026-10-02",
+          "results": [
+            {
+              "id": "dca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "rebalance",
+              "deltaWealth": -97.56030491931597
+            },
+            {
+              "id": "draw",
+              "deltaWealth": -74.15939348342363
+            },
+            {
+              "id": "under",
+              "deltaWealth": 34.83365366337239
+            },
+            {
+              "id": "smart",
+              "deltaWealth": -43.368769390537636
+            },
+            {
+              "id": "weak",
+              "deltaWealth": -6.876184176391689
+            },
+            {
+              "id": "strong",
+              "deltaWealth": -108.54132224127534
+            },
+            {
+              "id": "reserveDca",
+              "deltaWealth": 0
+            },
+            {
+              "id": "reserveSmart",
+              "deltaWealth": -43.368769390537636
+            }
+          ]
+        }
+      ],
+      "windows": [
+        {
+          "startDate": "2015-10-05",
+          "endDate": "2018-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 4.8427674032063805,
+            "draw": -7.487059633756871,
+            "under": -0.19041723290865775,
+            "smart": -6.046498526600772,
+            "weak": -3.185682900410029,
+            "strong": -10.17191594815813,
+            "reserveDca": 0,
+            "reserveSmart": -6.046498526600772
+          }
+        },
+        {
+          "startDate": "2016-10-05",
+          "endDate": "2019-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -49.12989072883647,
+            "draw": -7.331857484859938,
+            "under": -3.556155180784117,
+            "smart": -8.694235714225215,
+            "weak": -6.399409849036601,
+            "strong": -13.59766014660272,
+            "reserveDca": 0,
+            "reserveSmart": -8.694235714225215
+          }
+        },
+        {
+          "startDate": "2017-10-05",
+          "endDate": "2020-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -255.55417113655858,
+            "draw": -26.467533689909033,
+            "under": -21.820163764699828,
+            "smart": -42.70073211087583,
+            "weak": -32.30192675116268,
+            "strong": -62.22292800815194,
+            "reserveDca": 0,
+            "reserveSmart": -42.70073211087583
+          }
+        },
+        {
+          "startDate": "2018-10-05",
+          "endDate": "2021-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": -40.984783747713664,
+            "draw": -10.102858442332945,
+            "under": -7.168504402128747,
+            "smart": -14.026062469522003,
+            "weak": -10.378487874528219,
+            "strong": -21.675477845703426,
+            "reserveDca": 0,
+            "reserveSmart": -14.026062469522003
+          }
+        },
+        {
+          "startDate": "2019-10-05",
+          "endDate": "2022-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 55.202312015680945,
+            "draw": 4.052009355087648,
+            "under": 1.1666438125248533,
+            "smart": 4.8485827078839066,
+            "weak": 3.2321355311360094,
+            "strong": 8.711585085882689,
+            "reserveDca": 0,
+            "reserveSmart": 4.8485827078839066
+          }
+        },
+        {
+          "startDate": "2020-10-05",
+          "endDate": "2023-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 49.94781269806117,
+            "draw": 13.462729245409719,
+            "under": 1.489358202117728,
+            "smart": 13.121582946027047,
+            "weak": 7.416616000242357,
+            "strong": 23.014281096184277,
+            "reserveDca": 0,
+            "reserveSmart": 13.121582946027047
+          }
+        },
+        {
+          "startDate": "2021-10-05",
+          "endDate": "2024-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 5.394516456290148,
+            "draw": 12.143828651183867,
+            "under": 0.13989764497091528,
+            "smart": 12.274160720335203,
+            "weak": 6.731829417709378,
+            "strong": 22.782993410975905,
+            "reserveDca": 0,
+            "reserveSmart": 12.274160720335203
+          }
+        },
+        {
+          "startDate": "2022-10-05",
+          "endDate": "2025-10-04",
+          "deltas": {
+            "dca": 0,
+            "rebalance": 41.49497622554918,
+            "draw": 6.41317247661209,
+            "under": 3.4626433647499653,
+            "smart": 9.519561904256989,
+            "weak": 6.542070618925209,
+            "strong": 14.386706497542036,
+            "reserveDca": 0,
+            "reserveSmart": 9.519561904256989
+          }
+        }
+      ],
+      "insufficient": false,
+      "results": [
+        {
+          "id": "dca",
+          "label": "DCA objetivo",
+          "strategy": "targetDca",
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 302728.714763452,
+          "deltaWealth": 0,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.644729444325461,
+            "annualizedTwr": 0.12485217997147724,
+            "xirr": 0.14257932392961253,
+            "maxDrawdown": -0.33388328581589477,
+            "volatility": 0.15145037544992335,
+            "sharpe": 0.8511374038690397
+          }
+        },
+        {
+          "id": "rebalance",
+          "label": "Rebalanceo por aportaciones",
+          "strategy": "contributionRebalance",
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 304833.92431591253,
+          "deltaWealth": 2105.2095524605247,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.661161700815219,
+            "annualizedTwr": 0.12531258889235963,
+            "xirr": 0.1437405442133065,
+            "maxDrawdown": -0.3343501621211088,
+            "volatility": 0.15167709251159392,
+            "sharpe": 0.8527880746181642
+          }
+        },
+        {
+          "id": "draw",
+          "label": "Sólo caída",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 302751.7504146725,
+          "deltaWealth": 23.035651220474392,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6418418700579474,
+            "annualizedTwr": 0.1247710793029162,
+            "xirr": 0.1425920761300078,
+            "maxDrawdown": -0.33395206931445287,
+            "volatility": 0.15146706987788425,
+            "sharpe": 0.8505855506382589
+          }
+        },
+        {
+          "id": "under",
+          "label": "Sólo infraponderación",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 303030.9510104683,
+          "deltaWealth": 302.2362470162916,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.647846726080164,
+            "annualizedTwr": 0.12493966668924039,
+            "xirr": 0.14274655644458129,
+            "maxDrawdown": -0.33391111129531137,
+            "volatility": 0.1514735871258287,
+            "sharpe": 0.8515427160675866
+          }
+        },
+        {
+          "id": "smart",
+          "label": "Smart DCA configurado",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 303007.871733736,
+          "deltaWealth": 279.1569702840061,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.644995298974225,
+            "annualizedTwr": 0.12485964385227732,
+            "xirr": 0.14273379246902085,
+            "maxDrawdown": -0.33396205173462845,
+            "volatility": 0.15148360789740128,
+            "sharpe": 0.8510279892466333
+          }
+        },
+        {
+          "id": "weak",
+          "label": "Caída suave (0,5)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 0.5,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 303017.2410408986,
+          "deltaWealth": 288.5262774465955,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6463747511684095,
+            "annualizedTwr": 0.12489836408873245,
+            "xirr": 0.14273897428009252,
+            "maxDrawdown": -0.33393663285541286,
+            "volatility": 0.15147797075863734,
+            "sharpe": 0.8512806873698247
+          }
+        },
+        {
+          "id": "strong",
+          "label": "Caída intensa (2)",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 2,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 302995.9116010298,
+          "deltaWealth": 267.1968375777942,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.6428023126270865,
+            "annualizedTwr": 0.12479806086444478,
+            "xirr": 0.14272717752511793,
+            "maxDrawdown": -0.334008749628228,
+            "volatility": 0.1514939769366386,
+            "sharpe": 0.8506196544218432
+          }
+        },
+        {
+          "id": "reserveDca",
+          "label": "DCA + reserva escalonada",
+          "strategy": "targetDca",
+          "reserveMode": "ladder",
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 302728.714763452,
+          "deltaWealth": 0,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.644729444325461,
+            "annualizedTwr": 0.12485217997147724,
+            "xirr": 0.14257932392961253,
+            "maxDrawdown": -0.33388328581589477,
+            "volatility": 0.15145037544992335,
+            "sharpe": 0.8511374038690397
+          }
+        },
+        {
+          "id": "reserveSmart",
+          "label": "Smart + reserva escalonada",
+          "strategy": "smartDca",
+          "policy": {
+            "drawdownStrength": 1,
+            "underweightStrength": 0.35,
+            "maxContributionShare": 0.4,
+            "useMacro": false,
+            "macroStrength": 0.5
+          },
+          "reserveMode": "ladder",
+          "initialValue": 0,
+          "totalContributed": 133000,
+          "terminalValue": 303007.871733736,
+          "deltaWealth": 279.1569702840061,
+          "costs": 0,
+          "terminalCash": 0,
+          "metrics": {
+            "twr": 2.644995298974225,
+            "annualizedTwr": 0.12485964385227732,
+            "xirr": 0.14273379246902085,
+            "maxDrawdown": -0.33396205173462845,
+            "volatility": 0.15148360789740128,
+            "sharpe": 0.8510279892466333
+          }
+        }
+      ]
+    }
+  ]
+}

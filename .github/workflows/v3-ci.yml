@@ -1,7 +1,7 @@
 name: Market Radar V3 CI
 on:
   push:
-    branches: [market-radar-v3-clean, market-radar-v3-rebuild, main]
+    branches: [market-radar-v3-clean, market-radar-v3-rebuild, market-radar-v3-research, main]
   pull_request:
     branches: [main]
 permissions:

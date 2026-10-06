@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.0-rebuild";
+const CACHE = "market-radar-3.0.1-research";
 const CORE = [
   "./",
   "./index.html",
@@ -15,6 +15,7 @@ const CORE = [
   "./src/core/smart-dca.js",
   "./src/core/portfolio.js",
   "./src/core/backtest.js",
+  "./src/core/research.js",
   "./src/core/metrics.js",
   "./src/domain/defaults.js",
   "./src/domain/settings.js",

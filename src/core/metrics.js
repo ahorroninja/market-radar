@@ -110,6 +110,12 @@ export function backtestMetrics(observations, initialValue, startDate) {
       returns.push(r);
       growth *= 1 + r;
       unitValues.push(growth);
+    } else if (p.externalFlow > 0) {
+      // First purchase expenses matter even when there was no initial capital.
+      const r = p.value / p.externalFlow - 1;
+      growth *= 1 + r;
+      returns.push(r);
+      unitValues.push(growth);
     }
     previous = p.value;
   }
