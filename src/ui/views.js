@@ -8,6 +8,7 @@ import {
 import { buildPortfolioSnapshot } from "../core/portfolio.js";
 import { allocateSmartDca } from "../core/smart-dca.js";
 import { runBacktest, allocateTargetDca } from "../core/backtest.js";
+import { longHistoryUniverse } from "../core/universe.js";
 import { evaluateResearch } from "../core/research.js";
 import { createBackup, restoreBackup } from "../storage/backup.js";
 import { validateSettings } from "../domain/settings.js";
@@ -209,7 +210,7 @@ function renderResearch(study) {
 }
 export function renderBacktest(o, c) {
   const all = enabled(c);
-  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial disponible (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial está disponible en efectivo al inicio y se invierte en la primera compra. No se usa tu cartera actual como si hubiera existido en el pasado. Las unidades simuladas son fraccionarias de retorno total, no participaciones enteras.</p><fieldset><legend>Hipótesis de ejecución</legend><div class="form-grid"><label>Comisión fija por orden (€)<input name="fixedFee" type="number" min="0" step="0.01" value="0"></label><label>Comisión variable (%)<input name="feePct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Deslizamiento (%)<input name="slipPct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Interés anual del efectivo (%)<input name="cashPct" type="number" min="0" max="20" step="0.1" value="0"></label></div><p>Hipótesis constantes, no tarifas ni tipos históricos. Los gastos se pagan dentro del presupuesto. Sin impuestos personales.</p></fieldset><div class="actions"><button>Comparar las tres estrategias</button><button name="mode" value="research">Evaluar reglas y reserva</button></div><p>El estudio compara nueve reglas fijas con el DCA. Para evaluar la reserva, indica arriba el capital disponible al inicio: la referencia lo invierte inmediatamente y la alternativa lo despliega por escalones durante un máximo de 12 meses. No afecta a tus ajustes ni a Comprar.</p></form><div id="br" aria-live="polite"></div></section>`;
+  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="long">Histórico útil &gt; 5 años</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial disponible (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>El filtro de histórico útil exige más de cinco años después del calentamiento. Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial está disponible en efectivo al inicio y se invierte en la primera compra. No se usa tu cartera actual como si hubiera existido en el pasado. Las unidades simuladas son fraccionarias de retorno total, no participaciones enteras.</p><fieldset><legend>Hipótesis de ejecución</legend><div class="form-grid"><label>Comisión fija por orden (€)<input name="fixedFee" type="number" min="0" step="0.01" value="0"></label><label>Comisión variable (%)<input name="feePct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Deslizamiento (%)<input name="slipPct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Interés anual del efectivo (%)<input name="cashPct" type="number" min="0" max="20" step="0.1" value="0"></label></div><p>Hipótesis constantes, no tarifas ni tipos históricos. Los gastos se pagan dentro del presupuesto. Sin impuestos personales.</p></fieldset><div class="actions"><button>Comparar las tres estrategias</button><button name="mode" value="research">Evaluar reglas y reserva</button></div><p>El estudio compara nueve reglas fijas con el DCA. Para evaluar la reserva, indica arriba el capital disponible al inicio: la referencia lo invierte inmediatamente y la alternativa lo despliega por escalones durante un máximo de 12 meses. No afecta a tus ajustes ni a Comprar.</p></form><div id="br" aria-live="polite"></div></section>`;
   const f = o.querySelector("#bt"),
     out = o.querySelector("#br");
   function chooseDates() {
@@ -234,10 +235,19 @@ export function renderBacktest(o, c) {
   }
   f.elements.universe.onchange = () => {
     if (f.elements.universe.value !== "custom") {
+      if (f.elements.universe.value === "long") f.elements.period.value = "max";
+      const longIds = new Set(
+        longHistoryUniverse(
+          all,
+          Object.fromEntries(all.map((a) => [a.id, series(c, a.id)])),
+        ).map((a) => a.id),
+      );
       for (const input of f.querySelectorAll('[name="asset"]'))
         input.checked =
           f.elements.universe.value === "all" ||
-          ["world", "sp500", "value", "em-value"].includes(input.value);
+          (f.elements.universe.value === "long"
+            ? longIds.has(input.value)
+            : ["world", "sp500", "value", "em-value"].includes(input.value));
       chooseDates();
     }
   };
