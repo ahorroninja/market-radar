@@ -16,17 +16,19 @@ export async function fetchMacroHistories(settings, fetchImpl = fetch) {
         error = (await res.json()).error;
       } catch {}
       const detail =
-        error === "FRED_KEY_REJECTED"
-          ? "FRED rechaza la clave API. Revisa la clave en Ajustes."
-          : error === "FRED_RATE_LIMIT"
-            ? "FRED limita las consultas. Vuelve a intentarlo más tarde."
-            : error === "FRED_REQUEST_REJECTED"
-              ? "FRED rechaza la consulta; revisa la configuración de la API."
-              : res.status === 404
-                ? "No se encuentra la ruta /macro. Revisa la URL del Worker en Ajustes."
-                : res.status === 400
-                  ? "Petición o formato de clave inválido. Revisa Ajustes."
-                  : "FRED no ha podido responder. Vuelve a actualizar; el histórico anterior se conserva.";
+        error === "FRED_VINTAGE_UNAVAILABLE"
+          ? "FRED no ofrece revisiones históricas para esta serie. No se sustituyen por datos revisados en el backtest."
+          : error === "FRED_KEY_REJECTED"
+            ? "FRED rechaza la clave API. Revisa la clave en Ajustes."
+            : error === "FRED_RATE_LIMIT"
+              ? "FRED limita las consultas. Vuelve a intentarlo más tarde."
+              : error === "FRED_REQUEST_REJECTED"
+                ? "FRED rechaza la consulta; revisa la configuración de la API."
+                : res.status === 404
+                  ? "No se encuentra la ruta /macro. Revisa la URL del Worker en Ajustes."
+                  : res.status === 400
+                    ? "Petición o formato de clave inválido. Revisa Ajustes."
+                    : "FRED no ha podido responder. Vuelve a actualizar; el histórico anterior se conserva.";
       throw new Error(
         `Macro FRED (${seriesId}): HTTP ${res.status}. ${detail}`,
       );
