@@ -79,7 +79,7 @@ export default {
         {
           ok: true,
           service: "market-radar-yahoo-proxy",
-          version: "3.0.5",
+          version: "3.0.6",
           macro: true,
         },
         { headers },
@@ -107,39 +107,52 @@ export default {
               { status: 400, headers },
             );
           const points = [];
-          let offset = 0,
-            count = Infinity;
-          while (offset < count) {
-            const params = new URLSearchParams({
-              series_id: body.seriesId,
-              api_key: body.apiKey,
-              file_type: "json",
-              observation_start: "2000-01-01",
-              realtime_start: "1776-07-04",
-              realtime_end: "9999-12-31",
-              output_type: "1",
-              limit: "100000",
-              offset: String(offset),
-            });
-            const res = await fredFetch(
-              "https://api.stlouisfed.org/fred/series/observations?" + params,
-              { headers: { Accept: "application/json" } },
-            );
-            if (!res.ok) return fredFailure(res, headers, body.apiKey);
-            const data = await res.json();
-            count = data.count;
-            const rows = data.observations || [];
-            if (!rows.length) break;
-            for (const p of rows) {
-              if (p.value !== "." && Number.isFinite(Number(p.value)))
-                points.push({
-                  date: p.date,
-                  value: Number(p.value),
-                  availableFrom: p.realtime_start,
-                  availableUntil: p.realtime_end,
-                });
+          const today = new Date().toISOString().slice(0, 10);
+          // JSON allows at most 2000 vintage dates, independently of row pagination.
+          // Five calendar years contain fewer than 2000 possible daily vintages.
+          for (let year = 2000; year <= Number(today.slice(0, 4)); year += 5) {
+            const realtimeStart = `${year}-01-01`;
+            const realtimeEnd =
+              `${year + 4}-12-31` < today ? `${year + 4}-12-31` : today;
+            let offset = 0,
+              count = Infinity;
+            while (offset < count) {
+              const params = new URLSearchParams({
+                series_id: body.seriesId,
+                api_key: body.apiKey,
+                file_type: "json",
+                observation_start: "2000-01-01",
+                realtime_start: realtimeStart,
+                realtime_end: realtimeEnd,
+                output_type: "1",
+                limit: "100000",
+                offset: String(offset),
+              });
+              const res = await fredFetch(
+                "https://api.stlouisfed.org/fred/series/observations?" + params,
+                { headers: { Accept: "application/json" } },
+              );
+              if (!res.ok) return fredFailure(res, headers, body.apiKey);
+              const data = await res.json();
+              count = Number(data.count);
+              const rows = data.observations;
+              if (
+                !Number.isFinite(count) ||
+                !Array.isArray(rows) ||
+                (!rows.length && offset < count)
+              )
+                throw new Error("Incomplete FRED response");
+              for (const p of rows) {
+                if (p.value !== "." && Number.isFinite(Number(p.value)))
+                  points.push({
+                    date: p.date,
+                    value: Number(p.value),
+                    availableFrom: p.realtime_start,
+                    availableUntil: p.realtime_end,
+                  });
+              }
+              offset += rows.length;
             }
-            offset += rows.length;
           }
           return Response.json(
             { seriesId: body.seriesId, basis: "vintage", points },

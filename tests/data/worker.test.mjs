@@ -4,7 +4,7 @@ import worker from "../../worker/src/index.js";
 test("worker health identifies the new Yahoo + FRED runtime", async () => {
   const r = await worker.fetch(new Request("https://example.test/health"));
   const j = await r.json();
-  assert.equal(j.version, "3.0.5");
+  assert.equal(j.version, "3.0.6");
   assert.equal(j.macro, true);
 });
 test("worker CORS permits the existing site to request macro without exposing keys in a URL", async () => {
@@ -69,7 +69,10 @@ test("FRED rejects credentials without leaking its error body", async () => {
     globalThis.fetch = async () => {
       calls++;
       return Response.json(
-        { error_message: "The api_key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa is not registered. https://provider.test/?api_key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+        {
+          error_message:
+            "The api_key aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa is not registered. https://provider.test/?api_key=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        },
         { status: 400 },
       );
     };
@@ -97,9 +100,9 @@ test("FRED transient errors get one bounded retry and preserve vintage semantics
   try {
     globalThis.fetch = async (url, options) => {
       assert.ok(options.signal);
-      assert.equal(
+      assert.match(
         new URL(url).searchParams.get("realtime_start"),
-        "1776-07-04",
+        /^20\d{2}-01-01$/,
       );
       return ++calls === 1
         ? new Response("Unavailable", { status: 503 })
@@ -122,7 +125,10 @@ test("FRED transient errors get one bounded retry and preserve vintage semantics
       }),
     );
     assert.equal(r.status, 200);
-    assert.equal(calls, 2);
+    assert.equal(
+      calls,
+      Math.floor((new Date().getUTCFullYear() - 2000) / 5) + 2,
+    );
     assert.equal((await r.json()).basis, "vintage");
   } finally {
     globalThis.fetch = original;
@@ -149,6 +155,57 @@ test("FRED exhausted rate limits are explicit and never silently replaced by rev
       detail: "",
     });
     assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+test("vintage windows respect the 2000-date cap, paginate within each window and preserve availability", async () => {
+  const original = globalThis.fetch,
+    requests = [];
+  try {
+    globalThis.fetch = async (url) => {
+      const q = new URL(url).searchParams,
+        start = q.get("realtime_start"),
+        end = q.get("realtime_end"),
+        offset = Number(q.get("offset"));
+      requests.push({ start, end, offset });
+      assert.ok((Date.parse(end) - Date.parse(start)) / 86400000 + 1 < 2000);
+      const paginated = start === "2000-01-01";
+      return Response.json({
+        count: paginated ? 2 : 1,
+        observations: [
+          {
+            date: start,
+            value: String(offset + 20),
+            realtime_start: offset ? "2000-01-03" : start,
+            realtime_end: end,
+          },
+        ],
+      });
+    };
+    const r = await worker.fetch(
+      new Request("https://example.test/macro", {
+        method: "POST",
+        body: JSON.stringify({ seriesId: "VIXCLS", apiKey: "a".repeat(32) }),
+      }),
+    );
+    assert.equal(r.status, 200);
+    const j = await r.json();
+    assert.deepEqual(requests.slice(0, 3), [
+      { start: "2000-01-01", end: "2004-12-31", offset: 0 },
+      { start: "2000-01-01", end: "2004-12-31", offset: 1 },
+      { start: "2005-01-01", end: "2009-12-31", offset: 0 },
+    ]);
+    assert.equal(j.points.length, requests.length);
+    assert.equal(j.points[1].availableFrom, "2000-01-03");
+    assert.equal(j.points[1].availableUntil, "2004-12-31");
+    assert.equal(requests.at(-1).end, new Date().toISOString().slice(0, 10));
+    const windows = requests.filter((x) => x.offset === 0);
+    for (let i = 1; i < windows.length; i++)
+      assert.equal(
+        Date.parse(windows[i].start) - Date.parse(windows[i - 1].end),
+        86400000,
+      );
   } finally {
     globalThis.fetch = original;
   }
