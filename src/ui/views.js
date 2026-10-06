@@ -9,6 +9,7 @@ import { buildPortfolioSnapshot } from "../core/portfolio.js";
 import { allocateSmartDca } from "../core/smart-dca.js";
 import { runBacktest, allocateTargetDca } from "../core/backtest.js";
 import { longHistoryUniverse } from "../core/universe.js";
+import { startProspective, prospectiveStatus } from "../core/prospective.js";
 import { evaluateResearch } from "../core/research.js";
 import { createBackup, restoreBackup } from "../storage/backup.js";
 import { validateSettings } from "../domain/settings.js";
@@ -208,9 +209,70 @@ function renderResearch(study) {
   const baseline = study.results[0].result;
   return `<div class="panel"><h2>Evaluación de reglas y reserva</h2><p>${esc(study.conclusion)}</p><p>Protocolo ${esc(study.protocol)} · ${baseline.startDate} a ${baseline.endDate}. Se muestran las nueve variantes; no se elige un ganador ni se cambian tus ajustes.</p><div class="table-wrap"><table><thead><tr><th>Regla</th><th>Patrimonio final neto</th><th>Diferencia frente a DCA</th><th>XIRR</th><th>Caída máxima</th><th>Gastos</th><th>Efectivo final</th></tr></thead><tbody>${study.results.map((x) => `<tr><td>${esc(x.label)}</td><td>${eur(x.result.terminalValue)}</td><td>${eur(x.result.terminalValue - baseline.terminalValue)}</td><td>${pct(x.result.metrics.xirr)}</td><td>${pct(x.result.metrics.maxDrawdown)}</td><td>${eur(x.result.costs)}</td><td>${eur(x.result.terminalCash)}</td></tr>`).join("")}</tbody></table></div></div><div class="panel"><h2>Consistencia temporal</h2><div class="table-wrap"><table><thead><tr><th>Regla</th>${study.blocks.map((b) => `<th>${b.startDate} a ${b.endDate}<br>Diferencia en euros</th>`).join("")}<th>Ventanas de 3 años favorables</th></tr></thead><tbody>${study.results.map((x) => `<tr><td>${esc(x.label)}</td>${study.blocks.map((b) => `<td>${eur(b.results.find((r) => r.id === x.id).deltaWealth)}</td>`).join("")}<td>${study.windows.filter((w) => w.deltas[x.id] > 0).length} / ${study.windows.length}</td></tr>`).join("")}</tbody></table></div><p>${study.insufficient ? "Muestra insuficiente: menos de cinco ventanas. " : ""}Ventanas de tres años con paso anual: se solapan. Los bloques reinician el mismo capital; no son una cartera continua ni una prueba prospectiva.</p></div><details class="panel"><summary>Reglas y límites del estudio</summary><p>Todos reciben el mismo capital y las mismas aportaciones. La reserva alternativa libera acumulativamente 25/50/100% del capital inicial con caídas ponderadas de 10/20/30% desde máximos de 252 sesiones; remanente a los 12 meses. Decisión con precios anteriores a la compra mensual, sin reposición. El efectivo y sus intereses están incluidos. Con capital inicial cero no se evalúa el efecto de la reserva.</p><p>Las variantes de caída 0,5 y 2 miden sensibilidad; sólo infraponderación usa 0,35 y sólo caída usa 1. Las demás usan tu política, sin macro. Se simulan unidades fraccionarias ajustadas por dividendos/splits, costes editables y ningún impuesto. No se usan precios actuales para prolongar ETFs recientes hacia el pasado.</p><p>Estos resultados no validan el score completo de cinco bloques, ni identifican activos baratos, ni garantizan rentabilidad futura.</p></details>`;
 }
+function renderProspective(out, c, form) {
+  if (!c.paperJournal) {
+    const assets = longHistoryUniverse(
+      enabled(c),
+      Object.fromEntries(enabled(c).map((a) => [a.id, series(c, a.id)])),
+    );
+    out.innerHTML = `<div class="panel"><h2>Seguimiento virtual DCA vs rebalanceo</h2><p>Fija las reglas y registra decisiones futuras antes del cierre de ejecución. Universo con más de cinco años útiles: ${assets.map((a) => esc(a.name)).join(" · ") || "actualiza precios para seleccionar activos"}.</p><p>Aportación: ${eur(c.settings.monthlyContribution)} al mes. Usa el capital inicial y los costes indicados en el formulario superior. Ambos modelos invierten el dinero disponible; se evalúa el reparto, sin reserva táctica. No usa tu cartera real ni ejecuta operaciones.</p><button id="paper-start" ${assets.length && !c.refreshing && !c.paperStarting ? "" : "disabled"}>Fijar e iniciar seguimiento virtual</button><div id="paper-feedback" aria-live="polite"></div></div>`;
+    out.querySelector("#paper-start").onclick = async () => {
+      try {
+        if (c.refreshing)
+          throw new Error("Espera a que termine la actualización de precios.");
+        if (c.paperStarting || c.paperJournal) return;
+        c.paperStarting = true;
+        out.querySelector("#paper-start").disabled = true;
+        const journal = startProspective({
+          assets: assets.map((a) => ({
+            id: a.id,
+            name: a.name,
+            enabled: true,
+            targetWeight: a.targetWeight,
+            symbols: { yahoo: symbol(c, a) },
+          })),
+          cache: c.marketCache,
+          monthlyContribution: c.settings.monthlyContribution,
+          version: c.version,
+          assumptions: {
+            initialCash: Number(form.elements.capital.value),
+            fixedFee: Number(form.elements.fixedFee.value),
+            feeRate: Number(form.elements.feePct.value) / 100,
+            slippageRate: Number(form.elements.slipPct.value) / 100,
+            cashAnnualRate: Number(form.elements.cashPct.value) / 100,
+          },
+        });
+        await c.commit({
+          settings: c.settings,
+          marketCache: c.marketCache,
+          paperJournal: journal,
+        });
+        c.paperJournal = journal;
+        c.paperStarting = false;
+        renderProspective(out, c, form);
+      } catch (e) {
+        c.paperStarting = false;
+        out.querySelector("#paper-start").disabled = false;
+        out.querySelector("#paper-feedback").innerHTML = notice(e.message);
+      }
+    };
+    return;
+  }
+  try {
+    const j = c.paperJournal,
+      status = prospectiveStatus(j, c.marketCache),
+      dca = status.results.targetDca,
+      rebalance = status.results.contributionRebalance;
+    const sum = j.assets.reduce((s, a) => s + a.targetWeight, 0);
+    out.innerHTML = `<div class="panel"><h2>Seguimiento virtual DCA vs rebalanceo</h2><p>Reglas fijadas el ${esc(j.createdAt)} · protocolo ${esc(j.protocol)} · ${eur(j.monthlyContribution)}/mes · capital inicial ${eur(j.config.initialCash)}. Los ajustes posteriores no cambian estas reglas.</p><p>${j.assets.map((a) => `${esc(a.name)} ${pct(a.targetWeight / sum)}`).join(" · ")}</p><p>Comisión fija ${num(j.config.fixedFee)} €/orden; variable ${pct(j.config.feeRate)}; deslizamiento ${pct(j.config.slippageRate)}; efectivo ${pct(j.config.cashAnnualRate)}/año.</p>${c.paperNotice || j.notice ? notice(c.paperNotice || j.notice) : ""}${notice(status.completed ? `${status.completed} decisiones ejecutadas virtualmente · ${status.pending} pendientes · ${status.skipped} meses omitidos. Valoración con cierres de ${status.priceDate}.` : "Todavía no hay resultados prospectivos. La primera ejecución espera un cierre común de fecha posterior al día de registro.")}<div class="table-wrap"><table><thead><tr><th>Métrica</th><th>DCA por pesos</th><th>Rebalanceo por aportaciones</th></tr></thead><tbody><tr><td>Patrimonio virtual</td><td>${eur(dca.value)}</td><td>${eur(rebalance.value)}</td></tr><tr><td>Aportaciones ejecutadas</td><td>${eur(dca.totalContributed)}</td><td>${eur(rebalance.totalContributed)}</td></tr><tr><td>Gastos</td><td>${eur(dca.costs)}</td><td>${eur(rebalance.costs)}</td></tr><tr><td>Efectivo</td><td>${eur(dca.cash)}</td><td>${eur(rebalance.cash)}</td></tr><tr><td>Diferencia neta frente a DCA</td><td>—</td><td>${eur(rebalance.value - dca.value)}</td></tr></tbody></table></div><button id="paper-refresh">Actualizar precios y seguimiento</button><details><summary>Registro de decisiones (${j.decisions.length})</summary><div class="table-wrap"><table><thead><tr><th>Registro</th><th>Última información</th><th>Ejecución virtual</th><th>DCA</th><th>Rebalanceo</th></tr></thead><tbody>${j.decisions.map((d) => `<tr><td>${esc(d.createdAt)}</td><td>${d.signalCutoff}</td><td>${d.executionDate || "Pendiente: primer cierre común posterior a " + d.decisionDate}</td>${["targetDca", "contributionRebalance"].map((s) => `<td>${j.assets.map((a) => `${esc(a.name)}: ${eur(d.allocations[s][a.id])}`).join(" · ")}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details><p>Una decisión por mes al actualizar. Meses sin registro no se reconstruyen. Datos y registro locales, incluidos en el backup; no hay sellado externo de fechas. Unidades sintéticas de retorno total, sin impuestos ni participaciones enteras. ${dca.revisions || rebalance.revisions ? "Yahoo ha revisado precios ajustados: la valoración se rebasa a la serie actual; las órdenes registradas se conservan." : "La valoración utiliza la historia ajustada Yahoo disponible hoy."} Esta muestra futura empieza ahora y no constituye aún evidencia de superioridad.</p></div>`;
+    out.querySelector("#paper-refresh").onclick = () => c.refresh();
+  } catch (e) {
+    out.innerHTML = `<div class="panel"><h2>Seguimiento virtual conservado</h2>${notice(e.message)}<p>El registro sigue guardado. Recupera los precios EUR de sus símbolos originales para continuar; se incluye en el backup.</p></div>`;
+  }
+}
 export function renderBacktest(o, c) {
   const all = enabled(c);
-  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="long">Histórico útil &gt; 5 años</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial disponible (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>El filtro de histórico útil exige más de cinco años después del calentamiento. Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial está disponible en efectivo al inicio y se invierte en la primera compra. No se usa tu cartera actual como si hubiera existido en el pasado. Las unidades simuladas son fraccionarias de retorno total, no participaciones enteras.</p><fieldset><legend>Hipótesis de ejecución</legend><div class="form-grid"><label>Comisión fija por orden (€)<input name="fixedFee" type="number" min="0" step="0.01" value="0"></label><label>Comisión variable (%)<input name="feePct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Deslizamiento (%)<input name="slipPct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Interés anual del efectivo (%)<input name="cashPct" type="number" min="0" max="20" step="0.1" value="0"></label></div><p>Hipótesis constantes, no tarifas ni tipos históricos. Los gastos se pagan dentro del presupuesto. Sin impuestos personales.</p></fieldset><div class="actions"><button>Comparar las tres estrategias</button><button name="mode" value="research">Evaluar reglas y reserva</button></div><p>El estudio compara nueve reglas fijas con el DCA. Para evaluar la reserva, indica arriba el capital disponible al inicio: la referencia lo invierte inmediatamente y la alternativa lo despliega por escalones durante un máximo de 12 meses. No afecta a tus ajustes ni a Comprar.</p></form><div id="br" aria-live="polite"></div></section>`;
+  o.innerHTML = `<section class="view"><div class="view-title"><div><h1>Comparar estrategias</h1><p>Mismo universo, mismas aportaciones y mismas fechas</p></div></div><form id="bt" class="panel"><div class="form-grid"><label>Universo<select name="universe"><option value="core">Core 4 · histórico largo</option><option value="all">Todos los activos</option><option value="long">Histórico útil &gt; 5 años</option><option value="custom">Selección personalizada</option></select></label><label>Período<select name="period"><option value="3">3 años</option><option value="5">5 años</option><option value="10">10 años</option><option value="max">Máximo común</option></select></label><label>Ventanas móviles<select name="rolling"><option value="1">1 año</option><option value="2">2 años</option><option value="3" selected>3 años</option></select></label></div><div class="form-grid"><label>Desde<input name="start" type="date" required></label><label>Hasta<input name="end" type="date" required></label><label>Capital inicial disponible (€)<input name="capital" type="number" min="0" step="1" value="0"></label></div><fieldset><legend>Activos del ensayo</legend><div class="asset-selection">${all.map((a) => `<label><input type="checkbox" name="asset" value="${esc(a.id)}" ${["world", "sp500", "value", "em-value"].includes(a.id) ? "checked" : ""}>${esc(a.name)}</label>`).join("")}</div></fieldset><p>El filtro de histórico útil exige más de cinco años después del calentamiento. Los ETFs recientes acortan el período común. Se requieren 252 sesiones de calentamiento por activo. El capital inicial está disponible en efectivo al inicio y se invierte en la primera compra. No se usa tu cartera actual como si hubiera existido en el pasado. Las unidades simuladas son fraccionarias de retorno total, no participaciones enteras.</p><fieldset><legend>Hipótesis de ejecución</legend><div class="form-grid"><label>Comisión fija por orden (€)<input name="fixedFee" type="number" min="0" step="0.01" value="0"></label><label>Comisión variable (%)<input name="feePct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Deslizamiento (%)<input name="slipPct" type="number" min="0" max="10" step="0.01" value="0"></label><label>Interés anual del efectivo (%)<input name="cashPct" type="number" min="0" max="20" step="0.1" value="0"></label></div><p>Hipótesis constantes, no tarifas ni tipos históricos. Los gastos se pagan dentro del presupuesto. Sin impuestos personales.</p></fieldset><div class="actions"><button>Comparar las tres estrategias</button><button name="mode" value="research">Evaluar reglas y reserva</button></div><p>El estudio compara nueve reglas fijas con el DCA. Para evaluar la reserva, indica arriba el capital disponible al inicio: la referencia lo invierte inmediatamente y la alternativa lo despliega por escalones durante un máximo de 12 meses. No afecta a tus ajustes ni a Comprar.</p></form><div id="br" aria-live="polite"></div><div id="paper"></div></section>`;
   const f = o.querySelector("#bt"),
     out = o.querySelector("#br");
   function chooseDates() {
@@ -258,6 +320,7 @@ export function renderBacktest(o, c) {
       chooseDates();
     };
   chooseDates();
+  renderProspective(o.querySelector("#paper"), c, f);
   f.onsubmit = (e) => {
     e.preventDefault();
     const research = e.submitter?.value === "research";
@@ -299,6 +362,7 @@ export function renderBacktest(o, c) {
           endDate: d.get("end"),
           warmupTradingDays: 252,
           macroHistories: c.macroHistories,
+          paperJournal: c.paperJournal,
           smartDcaPolicy: { ...c.settings.smartDcaPolicy, useMacro: false },
         };
         if (research) {
@@ -459,6 +523,7 @@ export function renderSettings(o, c) {
           settings: c.settings,
           marketCache: c.marketCache,
           macroHistories: c.macroHistories,
+          paperJournal: c.paperJournal,
         },
         { includeSecrets: o.querySelector("#secrets").checked },
       );

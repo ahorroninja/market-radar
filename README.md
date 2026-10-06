@@ -30,3 +30,7 @@ Backtest permite indicar capital disponible, comisiones por orden/proporcionales
 El [estudio inicial](docs/RESEARCH_FINDINGS.md) no demuestra una ventaja consistente de Smart DCA ni justifica aumentar su intensidad. [Protocolo](docs/RESEARCH_PROTOCOL.md) y resultados completos reproducibles quedan publicados, incluidos los ensayos desfavorables. Los escenarios son ilustrativos, no la cartera privada del usuario.
 
 En 3.0.2, «Histórico útil > 5 años» selecciona automáticamente activos con más de cinco años tras 252 sesiones de calentamiento y abre su máximo período común. [Estudio de seis activos y contraste >10 años](docs/LONG_HISTORY_FINDINGS.md): mejoras pequeñas y evidencia todavía insuficiente para proclamar ventaja futura.
+
+## Seguimiento hacia adelante (3.0.3)
+
+Backtest permite fijar un seguimiento virtual local de DCA por pesos frente a rebalanceo con aportaciones. Guarda las decisiones antes del cierre futuro, congela el universo >5 años, capital, aportaciones y costes, y no reconstruye meses omitidos. Se actualiza al descargar precios y se incluye en el backup. No ejecuta operaciones reales ni modifica Comprar. [Reglas, fechas y límites](docs/PROSPECTIVE_VALIDATION.md).
