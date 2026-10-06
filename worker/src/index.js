@@ -1,43 +1,185 @@
 const ALLOWED_ORIGINS = new Set([
-  'https://ahorroninja.github.io',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
+  "https://ahorroninja.github.io",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
 ]);
 
 function cors(origin) {
-  const allowed = ALLOWED_ORIGINS.has(origin) ? origin : 'https://ahorroninja.github.io';
+  const allowed = ALLOWED_ORIGINS.has(origin)
+    ? origin
+    : "https://ahorroninja.github.io";
   return {
-    'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Cache-Control': 'public, max-age=900'
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Cache-Control": "public, max-age=900",
   };
 }
 
 export default {
   async fetch(request) {
-    const origin = request.headers.get('Origin') || '';
+    const origin = request.headers.get("Origin") || "";
     const headers = cors(origin);
-    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-    if (request.method !== 'GET') return Response.json({ error: 'Method not allowed' }, { status: 405, headers });
+    if (request.method === "OPTIONS")
+      return new Response(null, { status: 204, headers });
+    if (request.method !== "GET" && request.method !== "POST")
+      return Response.json(
+        { error: "Method not allowed" },
+        { status: 405, headers },
+      );
 
     const url = new URL(request.url);
-    if (url.pathname === '/health') return Response.json({ ok: true, service: 'market-radar-yahoo-proxy' }, { headers });
-    if (url.pathname !== '/chart') return Response.json({ error: 'Not found' }, { status: 404, headers });
+    if (url.pathname === "/health")
+      return Response.json(
+        {
+          ok: true,
+          service: "market-radar-yahoo-proxy",
+          version: "3.0.0",
+          macro: true,
+        },
+        { headers },
+      );
+    if (url.pathname === "/macro" && request.method === "POST") {
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return Response.json(
+          { error: "Invalid JSON" },
+          { status: 400, headers },
+        );
+      }
+      if (!["VIXCLS", "BAMLH0A0HYM2", "T10Y2Y", "NFCI"].includes(body.seriesId))
+        return Response.json(
+          { error: "Unknown series" },
+          { status: 400, headers },
+        );
+      try {
+        if (body.apiKey) {
+          if (!/^[a-zA-Z0-9]{32}$/.test(body.apiKey))
+            return Response.json(
+              { error: "Invalid API key format" },
+              { status: 400, headers },
+            );
+          const points = [];
+          let offset = 0,
+            count = Infinity;
+          while (offset < count) {
+            const params = new URLSearchParams({
+              series_id: body.seriesId,
+              api_key: body.apiKey,
+              file_type: "json",
+              observation_start: "2000-01-01",
+              realtime_start: "1776-07-04",
+              realtime_end: "9999-12-31",
+              output_type: "1",
+              limit: "100000",
+              offset: String(offset),
+            });
+            const res = await fetch(
+              "https://api.stlouisfed.org/fred/series/observations?" + params,
+              { headers: { Accept: "application/json" } },
+            );
+            if (!res.ok)
+              return Response.json(
+                { error: "FRED request failed" },
+                { status: 502, headers },
+              );
+            const data = await res.json();
+            count = data.count;
+            const rows = data.observations || [];
+            if (!rows.length) break;
+            for (const p of rows) {
+              if (p.value !== "." && Number.isFinite(Number(p.value)))
+                points.push({
+                  date: p.date,
+                  value: Number(p.value),
+                  availableFrom: p.realtime_start,
+                  availableUntil: p.realtime_end,
+                });
+            }
+            offset += rows.length;
+          }
+          return Response.json(
+            { seriesId: body.seriesId, basis: "vintage", points },
+            { headers: { ...headers, "Cache-Control": "no-store" } },
+          );
+        }
+        const res = await fetch(
+          "https://fred.stlouisfed.org/graph/fredgraph.csv?id=" +
+            body.seriesId +
+            "&cosd=2000-01-01",
+        );
+        if (!res.ok)
+          return Response.json(
+            { error: "FRED CSV request failed" },
+            { status: 502, headers },
+          );
+        const text = await res.text(),
+          lines = text.trim().split(/\r?\n/);
+        if (!lines[0].includes(body.seriesId)) throw new Error("Invalid CSV");
+        const points = lines.slice(1).flatMap((line) => {
+          const [date, value] = line.split(",");
+          return /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+            value !== "" &&
+            value !== "." &&
+            Number.isFinite(Number(value))
+            ? [{ date, value: Number(value), availableFrom: date }]
+            : [];
+        });
+        return Response.json(
+          { seriesId: body.seriesId, basis: "revised", points },
+          { headers },
+        );
+      } catch {
+        return Response.json(
+          { error: "FRED unavailable" },
+          { status: 502, headers },
+        );
+      }
+    }
+    if (request.method !== "GET")
+      return Response.json(
+        { error: "Method not allowed" },
+        { status: 405, headers },
+      );
+    if (url.pathname !== "/chart")
+      return Response.json({ error: "Not found" }, { status: 404, headers });
 
-    const symbol = (url.searchParams.get('symbol') || '').trim();
-    if (!/^[A-Za-z0-9.^=_-]{1,30}$/.test(symbol)) return Response.json({ error: 'Invalid symbol' }, { status: 400, headers });
+    const symbol = (url.searchParams.get("symbol") || "").trim();
+    if (!/^[A-Za-z0-9.^=_-]{1,30}$/.test(symbol))
+      return Response.json(
+        { error: "Invalid symbol" },
+        { status: 400, headers },
+      );
 
-    const period1 = url.searchParams.get('period1') || '0';
-    const period2 = url.searchParams.get('period2') || Math.floor(Date.now()/1000).toString();
+    const period1 = url.searchParams.get("period1") || "0";
+    const period2 =
+      url.searchParams.get("period2") ||
+      Math.floor(Date.now() / 1000).toString();
     const yahoo = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${encodeURIComponent(period1)}&period2=${encodeURIComponent(period2)}&interval=1d&events=div%2Csplits&includeAdjustedClose=true`;
 
     try {
-      const r = await fetch(yahoo, { headers: { 'User-Agent': 'Mozilla/5.0 MarketRadar/1.0', 'Accept': 'application/json' }, cf: { cacheTtl: 900, cacheEverything: true } });
+      const r = await fetch(yahoo, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 MarketRadar/1.0",
+          Accept: "application/json",
+        },
+        cf: { cacheTtl: 900, cacheEverything: true },
+      });
       const text = await r.text();
-      return new Response(text, { status: r.status, headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' } });
+      return new Response(text, {
+        status: r.status,
+        headers: {
+          ...headers,
+          "Content-Type": "application/json; charset=utf-8",
+        },
+      });
     } catch (e) {
-      return Response.json({ error: 'Yahoo upstream failed', detail: String(e) }, { status: 502, headers });
+      return Response.json(
+        { error: "Yahoo upstream failed", detail: String(e) },
+        { status: 502, headers },
+      );
     }
-  }
+  },
 };
