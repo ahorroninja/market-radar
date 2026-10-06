@@ -28,3 +28,5 @@ Ver [auditoría de evolución](docs/PROJECT_EVOLUTION_AUDIT.md) y [contratos act
 Backtest permite indicar capital disponible, comisiones por orden/proporcionales, deslizamiento y remuneración del efectivo. El capital inicial se invierte en el primer cierre de ejecución, no en un cierre anterior. «Evaluar reglas y reserva» compara nueve variantes fijas, sensibilidad y bloques temporales, contando efectivo y todos los gastos. No cambia la cartera ni el motor de Comprar.
 
 El [estudio inicial](docs/RESEARCH_FINDINGS.md) no demuestra una ventaja consistente de Smart DCA ni justifica aumentar su intensidad. [Protocolo](docs/RESEARCH_PROTOCOL.md) y resultados completos reproducibles quedan publicados, incluidos los ensayos desfavorables. Los escenarios son ilustrativos, no la cartera privada del usuario.
+
+En 3.0.2, «Histórico útil > 5 años» selecciona automáticamente activos con más de cinco años tras 252 sesiones de calentamiento y abre su máximo período común. [Estudio de seis activos y contraste >10 años](docs/LONG_HISTORY_FINDINGS.md): mejoras pequeñas y evidencia todavía insuficiente para proclamar ventaja futura.

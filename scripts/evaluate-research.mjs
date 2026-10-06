@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { evaluateResearch } from "../src/core/research.js";
+import { longHistoryUniverse } from "../src/core/universe.js";
 import { freshSettings } from "../src/domain/defaults.js";
-const [input, destination = "docs/RESEARCH_RESULTS.json"] =
+const [input, destination = "docs/RESEARCH_RESULTS.json", mode] =
   process.argv.slice(2);
 if (!input)
   throw new Error(
@@ -13,10 +14,33 @@ const cache = data.marketCache;
 if (!cache)
   throw new Error("Se requiere un backup V3 con históricos Yahoo en EUR.");
 const settings = freshSettings(); // Never use private credentials, holdings or settings in the report.
-const universes = [
-  { id: "core4", ids: ["world", "sp500", "value", "em-value"] },
-  { id: "long3", ids: ["world", "sp500", "value"] },
-];
+const historiesForSelection = Object.fromEntries(
+  Object.entries(cache).map(([id, x]) => [id, x.points]),
+);
+const universes =
+  mode === "long-history"
+    ? [
+        {
+          id: "useful-over5",
+          ids: longHistoryUniverse(
+            settings.assets,
+            historiesForSelection,
+            5,
+          ).map((a) => a.id),
+        },
+        {
+          id: "useful-over10",
+          ids: longHistoryUniverse(
+            settings.assets,
+            historiesForSelection,
+            10,
+          ).map((a) => a.id),
+        },
+      ]
+    : [
+        { id: "core4", ids: ["world", "sp500", "value", "em-value"] },
+        { id: "long3", ids: ["world", "sp500", "value"] },
+      ];
 const output = {
   protocol: "allocation-reserve-1",
   generatedAt: new Date().toISOString(),
