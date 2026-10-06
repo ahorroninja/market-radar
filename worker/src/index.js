@@ -16,6 +16,45 @@ function cors(origin) {
   };
 }
 
+async function fredFetch(url, options = {}) {
+  let response;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(12000),
+      });
+      if (response.status !== 429 && response.status < 500) return response;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+  }
+  return response;
+}
+
+async function fredFailure(response, headers) {
+  // Classify the provider's error; never relay its body or a credential-bearing URL.
+  let message = "";
+  try {
+    message = (await response.json()).error_message || "";
+  } catch {}
+  const keyRejected = /api[_ ]?key|registered|not valid.*key/i.test(message);
+  const code = keyRejected
+    ? "FRED_KEY_REJECTED"
+    : response.status === 429
+      ? "FRED_RATE_LIMIT"
+      : response.status >= 500
+        ? "FRED_TEMPORARY"
+        : "FRED_REQUEST_REJECTED";
+  return Response.json(
+    { error: code, upstreamStatus: response.status },
+    {
+      status: keyRejected ? 422 : 502,
+      headers: { ...headers, "Cache-Control": "no-store" },
+    },
+  );
+}
+
 export default {
   async fetch(request) {
     const origin = request.headers.get("Origin") || "";
@@ -34,7 +73,7 @@ export default {
         {
           ok: true,
           service: "market-radar-yahoo-proxy",
-          version: "3.0.0",
+          version: "3.0.4",
           macro: true,
         },
         { headers },
@@ -76,15 +115,11 @@ export default {
               limit: "100000",
               offset: String(offset),
             });
-            const res = await fetch(
+            const res = await fredFetch(
               "https://api.stlouisfed.org/fred/series/observations?" + params,
               { headers: { Accept: "application/json" } },
             );
-            if (!res.ok)
-              return Response.json(
-                { error: "FRED request failed" },
-                { status: 502, headers },
-              );
+            if (!res.ok) return fredFailure(res, headers);
             const data = await res.json();
             count = data.count;
             const rows = data.observations || [];
@@ -105,16 +140,12 @@ export default {
             { headers: { ...headers, "Cache-Control": "no-store" } },
           );
         }
-        const res = await fetch(
+        const res = await fredFetch(
           "https://fred.stlouisfed.org/graph/fredgraph.csv?id=" +
             body.seriesId +
             "&cosd=2000-01-01",
         );
-        if (!res.ok)
-          return Response.json(
-            { error: "FRED CSV request failed" },
-            { status: 502, headers },
-          );
+        if (!res.ok) return fredFailure(res, headers);
         const text = await res.text(),
           lines = text.trim().split(/\r?\n/);
         if (!lines[0].includes(body.seriesId)) throw new Error("Invalid CSV");
@@ -133,8 +164,8 @@ export default {
         );
       } catch {
         return Response.json(
-          { error: "FRED unavailable" },
-          { status: 502, headers },
+          { error: "FRED_TEMPORARY" },
+          { status: 502, headers: { ...headers, "Cache-Control": "no-store" } },
         );
       }
     }

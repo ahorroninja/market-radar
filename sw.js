@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.3-prospective-revalidate";
+const CACHE = "market-radar-3.0.4-macro-errors";
 const CORE = [
   "./",
   "./index.html",
