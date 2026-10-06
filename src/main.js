@@ -3,6 +3,7 @@ import { VIEW_RENDERERS } from "./ui/views.js";
 import { APP_VERSION } from "./domain/defaults.js";
 import { loadState, saveSettings, migrateSettings } from "./app/persistence.js";
 import { readSnapshot, writeSnapshot } from "./storage/market-cache.js";
+import { advanceProspective } from "./core/prospective.js";
 import { refreshMarketData } from "./app/refresh.js";
 const state = loadState();
 try {
@@ -12,6 +13,7 @@ try {
     state.marketCache = saved.marketCache || {};
     state.macroHistories = saved.macroHistories || {};
     state.lastRefresh = saved.lastRefresh;
+    state.paperJournal = saved.paperJournal ?? null;
   }
 } catch {
   state.migrationNotice =
@@ -41,6 +43,7 @@ ctx.commit = async (staged) => {
     marketCache: staged.marketCache,
     macroHistories: staged.macroHistories ?? ctx.macroHistories ?? {},
     lastRefresh: staged.lastRefresh ?? ctx.lastRefresh ?? null,
+    paperJournal: staged.paperJournal ?? ctx.paperJournal ?? null,
   };
   if (!(await writeSnapshot(snapshot))) {
     // Single serialized state preserves transactional restore when IndexedDB is unavailable.
@@ -71,6 +74,17 @@ ctx.refresh = async () => {
       onProgress: (n, total) => shell.setStatus(`Actualizando ${n}/${total}`),
     });
     staged.settings = ctx.settings;
+    if (ctx.paperJournal) {
+      try {
+        staged.paperJournal = advanceProspective(
+          ctx.paperJournal,
+          staged.marketCache,
+        );
+        ctx.paperNotice = null;
+      } catch (e) {
+        ctx.paperNotice = e.message;
+      }
+    }
     staged.lastRefresh = new Date().toISOString();
     await ctx.commit(staged);
     if (!r.failures.length) ctx.migrationNotice = null;

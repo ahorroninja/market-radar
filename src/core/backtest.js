@@ -1,3 +1,4 @@
+import { executionAssumptions, executeBudget } from "./execution.js";
 import { macroAt } from "./macro.js";
 import { allocateSmartDca, roundWholeEuros } from "./smart-dca.js";
 import { indicatorSnapshot } from "./radar.js";
@@ -117,33 +118,7 @@ export function runBacktest(req) {
   );
   const initial = req.initialHoldings || {},
     shares = Object.fromEntries(assets.map((a) => [a.id, 0]));
-  const assumptions = {
-    initialCash: 0,
-    cashAnnualRate: 0,
-    feeRate: 0,
-    fixedFee: 0,
-    slippageRate: 0,
-    reserveMode: "immediate",
-    ...req.assumptions,
-  };
-  if (
-    ![
-      assumptions.initialCash,
-      assumptions.cashAnnualRate,
-      assumptions.feeRate,
-      assumptions.fixedFee,
-      assumptions.slippageRate,
-    ].every((x) => Number.isFinite(x) && x >= 0) ||
-    !Number.isInteger(assumptions.initialCash) ||
-    assumptions.cashAnnualRate > 0.2 ||
-    assumptions.feeRate > 0.1 ||
-    assumptions.slippageRate > 0.1 ||
-    !["immediate", "ladder"].includes(assumptions.reserveMode)
-  )
-    throw err(
-      "INVALID_ASSUMPTIONS",
-      "Hipótesis de costes o reserva inválidas.",
-    );
+  const assumptions = executionAssumptions(req.assumptions);
   let cash = assumptions.initialCash,
     initialValue = cash,
     costs = 0,
@@ -269,20 +244,12 @@ export function runBacktest(req) {
         orderCosts = {};
       for (const a of assets) {
         const gross = allocations[a.id] || 0;
-        if (gross <= assumptions.fixedFee) {
-          invested[a.id] = 0;
-          orderCosts[a.id] = 0;
-          continue;
-        }
-        const net =
-          (gross - assumptions.fixedFee) /
-          (1 + assumptions.feeRate + assumptions.slippageRate);
-        const expense = gross - net;
-        shares[a.id] += net / maps[a.id].get(date);
-        cash -= gross;
-        costs += expense;
-        invested[a.id] = net;
-        orderCosts[a.id] = expense;
+        const fill = executeBudget(gross, assumptions);
+        shares[a.id] += fill.invested / maps[a.id].get(date);
+        cash -= fill.spent;
+        costs += fill.cost;
+        invested[a.id] = fill.invested;
+        orderCosts[a.id] = fill.cost;
       }
       externalFlows.push({ date, amount: flow });
       ledger.push({

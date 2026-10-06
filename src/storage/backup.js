@@ -1,3 +1,4 @@
+import { validateProspective } from "../core/prospective.js";
 import { validateSettings } from "../domain/settings.js";
 import { normalizePriceSeries } from "../data/normalize.js";
 import { freshSettings } from "../domain/defaults.js";
@@ -111,6 +112,7 @@ export function createBackup(
   checkSettings(state?.settings);
   validateCache(state?.marketCache || {});
   validateMacro(state?.macroHistories);
+  validateProspective(state?.paperJournal);
   return {
     schemaVersion: 1,
     exportedAt: now,
@@ -121,6 +123,9 @@ export function createBackup(
     ...(state.macroHistories
       ? { macroHistories: clone(state.macroHistories) }
       : {}),
+    paperJournal: state.paperJournal
+      ? withoutSecrets(clone(state.paperJournal))
+      : null,
     secretsIncluded: Boolean(includeSecrets),
   };
 }
@@ -143,6 +148,9 @@ export function restoreBackup(envelope, currentState) {
   const staged = {
     settings: clone(envelope.settings),
     marketCache: clone(envelope.marketCache || {}),
+    paperJournal: clone(
+      envelope.paperJournal ?? currentState?.paperJournal ?? null,
+    ),
     ...(envelope.macroHistories
       ? { macroHistories: clone(envelope.macroHistories) }
       : {}),
@@ -152,5 +160,6 @@ export function restoreBackup(envelope, currentState) {
   checkSettings(staged.settings);
   validateCache(staged.marketCache);
   validateMacro(staged.macroHistories);
+  validateProspective(staged.paperJournal);
   return staged;
 }

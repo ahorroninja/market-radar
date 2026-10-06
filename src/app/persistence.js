@@ -91,6 +91,7 @@ export function loadState(storage = localStorage) {
         marketCache: saved.marketCache || {},
         macroHistories: saved.macroHistories || {},
         lastRefresh: saved.lastRefresh,
+        paperJournal: saved.paperJournal ?? null,
       };
     }
   } catch {}

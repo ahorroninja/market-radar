@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.2-long-history";
+const CACHE = "market-radar-3.0.3-prospective";
 const CORE = [
   "./",
   "./index.html",
@@ -17,6 +17,8 @@ const CORE = [
   "./src/core/backtest.js",
   "./src/core/research.js",
   "./src/core/universe.js",
+  "./src/core/execution.js",
+  "./src/core/prospective.js",
   "./src/core/metrics.js",
   "./src/domain/defaults.js",
   "./src/domain/settings.js",
