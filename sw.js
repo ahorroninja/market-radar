@@ -1,4 +1,4 @@
-const CACHE = "market-radar-3.0.3-prospective";
+const CACHE = "market-radar-3.0.3-prospective-precision";
 const CORE = [
   "./",
   "./index.html",
