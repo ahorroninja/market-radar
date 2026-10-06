@@ -1,6 +1,8 @@
 # Market Radar V3 — Product Specification
 
-Status: FROZEN BASELINE BEFORE IMPLEMENTATION
+Status: HISTORICAL BASELINE — see PROJECT_EVOLUTION_AUDIT.md for the reconstructed 3.0 decisions.
+
+The original five-block fundamental score is not fabricated when sources are missing. The delivered technical score, EUR conversion, 252-session drawdown, FRED vintage gating and rolling methodology are specified in the audit. Money recommendations use whole euros, superseding the cent-precision wording below.
 
 ## 1. Product goal
 Personal, mobile-first installable PWA for deciding when and how to deploy new monthly investment contributions across a configurable ETF/fund portfolio. No individual-stock analysis. No selling/rebalancing by sale in Smart DCA.

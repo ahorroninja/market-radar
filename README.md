@@ -1,38 +1,24 @@
-# Market Radar PWA — V1
+# Market Radar 3.0
 
-App personal, estática e instalable en Android. No requiere backend.
+PWA personal para ETFs e índices. Frontend estático, información del usuario local y precios Yahoo Finance mediante el Worker existente. No utiliza Stooq.
 
-## Qué hace
-- Sigue 10 bloques: MSCI World, S&P 500, World Value, EM Value, World IT, AI Infrastructure, Defense, Uranium/Nuclear, Strategic Metals y Gold.
-- Descarga precios diarios de EODHD.
-- Opcionalmente usa FRED para VIX, high-yield spread y curva 10Y-2Y.
-- Calcula MA50/MA200, RSI, momentum, drawdown, tendencia y Opportunity Score.
-- Genera ranking mensual y reparto indicativo del DCA.
-- Guarda configuración y datos sólo en el navegador.
+- Radar: cierres ajustados en EUR, medias 50/200, RSI de Wilder 14, momentum 252 y drawdown de 252 sesiones. Scores técnicos heurísticos con desglose de fuentes ausentes.
+- Comprar: pesos objetivo, caída e infraponderación; cantidades enteras que suman exactamente la aportación. Reserva extra sólo a elección del usuario; nunca ventas.
+- Backtest: DCA objetivo, rebalanceo con nuevas aportaciones y el mismo Smart DCA de producción. Decisión antes del cierre de ejecución, capital y flujos separados, TWR/XIRR/drawdown del rendimiento/volatilidad/Sharpe, ledger y ventanas móviles.
+- Ajustes: cartera, símbolos, pesos, política y copias completas. Migración del estado antiguo sin publicar posiciones o credenciales.
+- Histórico en IndexedDB; caché offline de los módulos. Actualización al abrir si la última descarga supera 20 horas, o manual.
 
-## Importante
-La V1 NO incorpora todavía valoración histórica específica por índice ni breadth fiable. El score actual pondera 55% tendencia, 25% drawdown y 20% macro. Esto es deliberado: no se simulan datos que no tengamos.
+## Ejecutar y comprobar
 
-Los tickers EODHD incluidos son proxies/listados de referencia y pueden requerir ajuste según la cobertura de tu plan EODHD. Si un ticker falla, edítalo en `ASSETS` dentro de app.js.
-
-## Ejecutar localmente
-Una PWA necesita HTTP(S), no abrir `index.html` como file://.
-
-Con Python:
+```sh
+npm test
+python -m http.server 5173
 ```
-python -m http.server 8080
-```
-Luego abre http://localhost:8080
 
-## Publicar gratis
-Sube esta carpeta a Cloudflare Pages, Netlify, Vercel o GitHub Pages como sitio estático. No hay build step.
+## Worker
 
-## Android
-Abre la URL publicada en Chrome > menú > "Añadir a pantalla de inicio" / "Instalar aplicación".
+`worker/src/index.js` mantiene `/chart` (Yahoo) y añade `/macro` (FRED). FRED sin clave entrega series revisadas sólo para contexto actual; con la clave local se solicitan observaciones con períodos de vigencia históricos. Las claves viajan en el cuerpo de la petición al Worker del usuario, no en URLs, Git o archivos de configuración publicados. No se almacenan en el Worker.
 
-## Próxima V2 recomendada
-1. Validar tickers y cobertura EODHD de los 10 vehículos.
-2. Añadir series de valoración histórica por índice/fondo.
-3. Añadir breadth y sentimiento con fuentes estables.
-4. Implementar backtest walk-forward/out-of-sample contra DCA y DCA+rebalanceo.
-5. Sólo después recalibrar pesos y umbrales del score.
+El ensayo macro se bloquea si no dispone de datos vintage adecuados. La ventaja histórica de una política no demuestra su superioridad futura.
+
+Ver [auditoría de evolución](docs/PROJECT_EVOLUTION_AUDIT.md) y [contratos actuales](docs/PRODUCT_SPEC_V3.md).
